@@ -49,6 +49,9 @@ test.skipIf(!runtimeAvailable || !blender)("live Blender scene and fresh GLB imp
     expect(quality.isError, JSON.stringify(quality.content)).not.toBe(true);
     expect((quality.structuredContent as any).quality.status).toBe("constraints_failed");
     expect((quality.structuredContent as any).quality.issues).toContainEqual({severity:"warning",code:"above_ground_plane",object:"foot",signed_distance:2});
+    const contact = await client.callTool({name:"blender_quality_report",arguments:{assetPath,blenderPath:blender,contactPairs:[["body","foot"]],limit:1}});
+    expect(contact.isError,JSON.stringify(contact.content)).not.toBe(true);
+    expect((contact.structuredContent as any).contact_checks[0]).toMatchObject({status:"gap_detected",aabb_distance_lower_bound:1.5});
     const imported = await client.callTool({name:"blender_describe_scene",arguments:{assetPath:join(temporary,"fixture.glb"),blenderPath:blender}});
     expect(imported.isError, JSON.stringify(imported.content)).not.toBe(true);
     expect((imported.structuredContent as any).selection.triangles).toBe(36);

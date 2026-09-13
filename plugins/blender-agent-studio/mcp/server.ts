@@ -253,6 +253,7 @@ const sceneSchema = z.object({
   proximity: z.number().min(0).max(1e9).default(0.01).describe("World-unit AABB proximity threshold; not surface distance."),
   groundZ: z.number().min(-1e12).max(1e12).optional(),
   groundObjects: z.array(z.string()).max(200).default([]).describe("Only explicitly named objects are checked against groundZ."),
+  contactPairs: z.array(z.tuple([z.string(), z.string()])).max(200).default([]).describe("Exact mesh-object pairs intended to touch according to the brief. Detects definite AABB gaps; overlapping bounds do not prove surface contact. Covers full selection."),
   tolerance: z.number().min(0).max(1e9).default(0.001),
   triangleBudget: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   requireClosedMesh: z.boolean().default(false),
@@ -265,14 +266,14 @@ for (const name of ["blender_describe_scene", "blender_quality_report"] as const
     title: name === "blender_describe_scene" ? "Describe Blender scene" : "Blender quality report",
     description: name === "blender_describe_scene"
       ? "Extract SceneIR and analyze with the Rust runtime. Returns compact evaluated bounds, authored roles, hierarchy and paginated AABB relation candidates. Read-only; requires setup:runtime."
-      : "Evaluate explicit triangle, closed-mesh and named ground constraints with the Rust runtime. Returns measurable findings and required visual-review questions, never an aesthetic score. Constraints cover the full selected assembly, independent of pagination. Read-only; requires setup:runtime.",
+      : "Evaluate explicit triangle, closed-mesh, named ground and intended contact constraints with the Rust runtime. Returns measurable findings and required visual-review questions, never an aesthetic score. Constraints cover the full selected assembly, independent of pagination. Read-only; requires setup:runtime.",
     inputSchema: sceneSchema,
-  }, async ({ assetPath, outputJson, blenderPath, timeoutMs, objectId, includeDescendants, offset, limit, proximity, groundZ, groundObjects, tolerance, triangleBudget, requireClosedMesh }) => {
+  }, async ({ assetPath, outputJson, blenderPath, timeoutMs, objectId, includeDescendants, offset, limit, proximity, groundZ, groundObjects, contactPairs, tolerance, triangleBudget, requireClosedMesh }) => {
     try {
       if (groundObjects.length && groundZ === undefined) throw new Error("groundObjects requires explicit groundZ");
       return result(await describeAsset({ assetPath, outputJson, blenderPath, timeoutMs,
         options: { object_id: objectId, include_descendants: includeDescendants, offset, limit, proximity,
-          ground_z: groundZ, ground_objects: groundObjects, tolerance, triangle_budget: triangleBudget, require_closed_mesh: requireClosedMesh } }));
+          ground_z: groundZ, ground_objects: groundObjects, contact_pairs: contactPairs, tolerance, triangle_budget: triangleBudget, require_closed_mesh: requireClosedMesh } }));
     } catch (error) { return errorResult(error); }
   });
 }

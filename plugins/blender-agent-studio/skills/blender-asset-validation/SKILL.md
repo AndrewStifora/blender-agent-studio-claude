@@ -55,6 +55,16 @@ fixed views below and answer its primary-form, reference and finish questions.
 If the runtime is missing, follow its setup message or continue with the existing
 inspector and visual evidence; do not claim unmeasured analysis.
 
+For intended physical joints, declare `contactPairs` in the quality report as
+exact mesh-object pairs that should touch. Choose them from the construction
+contract, not from arbitrary nearby names. A positive bounds gap beyond
+`tolerance` proves separation and produces `expected_contact_gap`, even when
+the objects are outside the returned page. `contact_unverified` means the boxes
+are close or overlap; it does not establish surface contact. For joints with an
+intermediate connector, check each actual connection rather than requiring the
+two remote endpoints to touch. Review the joint in multiple views, repair the
+durable source, and rerun the same declared pairs before retaining the repair.
+
 ## Render evidence
 
 The default `presentation: "auto"` selects a studio background using a

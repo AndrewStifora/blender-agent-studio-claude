@@ -118,6 +118,13 @@ open multiview evidence and assess silhouette, proportion, supports,
 intersections, readability, orientation, and requested details. Open individual
 views at original detail when the contact sheet cannot resolve a defect.
 
+When scene analysis is available, declare intended touching mesh pairs from the
+construction contract as `contactPairs` in `blender_quality_report`. Check each
+actual joint through intermediate hardware. Repair `expected_contact_gap`
+findings before detailing; close or overlapping bounds remain
+`contact_unverified` and require visual inspection. Preserve these constraints
+across iterations so a later proportion change cannot silently separate parts.
+
 Use `$blender-agent-studio:blender-asset-validation` for early fresh-import
 checks when a change risks export behavior and for full final inspection and
 standardized evidence. A cosmetic iteration does not require the entire export

@@ -100,6 +100,25 @@ disables automatic script execution, and never saves the source. Failed runs
 return MCP errors, never a prior analysis artifact. Extraction has the supplied
 `timeoutMs`; Rust analysis has a separate 30-second limit.
 
+### Declared contact checks
+
+`contactPairs` accepts up to 200 pairs of exact mesh-object IDs that the brief
+or construction contract requires to touch. For example,
+`[["leg", "foot"], ["handle", "mount"]]`. Each target must belong to the full
+selected assembly and have mesh bounds. Self-pairs and unknown targets fail.
+For a joint with intermediate hardware, specify the individual touching pairs.
+
+The result's `contact_checks` records the AABB distance lower bound and the
+supplied tolerance in world units. A gap beyond tolerance produces an
+`expected_contact_gap` constraint error. Close or overlapping bounds return
+`contact_unverified`, never a proven contact pass. These explicit checks cover
+the entire selection regardless of pagination. They are separate from the
+page-local, automatically generated proximity candidates.
+
+This catches definite separation while leaving ambiguous surface geometry to
+multiview review. It does not infer missing supporters or choose required joints
+automatically. The runtime equivalent option is `contact_pairs`.
+
 ## SceneIR 0.1 contract
 
 `runtime/src/lib.rs` defines the versioned, strict input schema. The executable

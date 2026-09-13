@@ -74,6 +74,7 @@ pub struct Options {
     pub proximity: f64,
     pub ground_z: Option<f64>,
     pub ground_objects: Vec<String>,
+    pub contact_pairs: Vec<[String; 2]>,
     pub tolerance: f64,
     pub triangle_budget: Option<u64>,
     pub require_closed_mesh: bool,
@@ -89,6 +90,7 @@ impl Default for Options {
             proximity: 0.01,
             ground_z: None,
             ground_objects: vec![],
+            contact_pairs: vec![],
             tolerance: 0.001,
             triangle_budget: None,
             require_closed_mesh: false,
@@ -128,6 +130,9 @@ fn validate(scene: &Scene, options: &Options) -> Result<(), String> {
         || (!options.ground_objects.is_empty() && options.ground_z.is_none())
     {
         return Err("Ground checks require a finite explicit ground_z".into());
+    }
+    if options.contact_pairs.len() > 200 {
+        return Err("At most 200 contact pairs are allowed".into());
     }
     let ids: BTreeMap<_, _> = scene.objects.iter().map(|o| (o.id.as_str(), o)).collect();
     if ids.len() != scene.objects.len() {
@@ -176,6 +181,7 @@ fn validate(scene: &Scene, options: &Options) -> Result<(), String> {
         .object_id
         .iter()
         .chain(options.ground_objects.iter())
+        .chain(options.contact_pairs.iter().flatten())
     {
         if !ids.contains_key(id.as_str()) {
             return Err(format!("Unknown object: {id}"));
@@ -277,6 +283,30 @@ pub fn analyze(request: Request) -> Result<Value, String> {
             issues.push(json!({"severity":"warning","code":if gap > 0.0 {"above_ground_plane"} else {"below_ground_plane"},"object":id,"signed_distance":gap}));
         }
     }
+    let mut contact_checks = vec![];
+    for pair in &options.contact_pairs {
+        if pair[0] == pair[1] {
+            return Err("Contact pairs must contain distinct objects".into());
+        }
+        let bounds_for = |id: &str| -> Result<&Bounds, String> {
+            selected
+                .iter()
+                .find(|o| o.id == id)
+                .ok_or_else(|| format!("Contact object outside selection: {id}"))?
+                .bounds
+                .as_ref()
+                .ok_or_else(|| format!("Contact object has no mesh bounds: {id}"))
+        };
+        let distance = bounds_for(&pair[0])?.distance(bounds_for(&pair[1])?);
+        let separated = distance > options.tolerance;
+        contact_checks.push(json!({"objects":pair,"aabb_distance_lower_bound":distance,
+            "status":if separated {"gap_detected"} else {"contact_unverified"},"tolerance":options.tolerance}));
+        if separated {
+            issues.push(json!({"severity":"error","code":"expected_contact_gap","objects":pair,
+                "minimum_gap":distance,"tolerance":options.tolerance,
+                "message":"These explicitly declared touching parts have separated world bounds. Check the intended joint in the rendered views."}));
+        }
+    }
     // Spatial relations are broad-phase candidates only and apply to this page.
     for (i, object) in page.iter().enumerate() {
         if let Some(parent) = &object.parent {
@@ -314,6 +344,7 @@ pub fn analyze(request: Request) -> Result<Value, String> {
     Ok(json!({
         "schema_version":"bas-analysis/0.1", "runtime_version":env!("CARGO_PKG_VERSION"),
         "evaluation_options":options,
+        "contact_checks":contact_checks,
         "source":scene.source,"blender_version":scene.blender_version,"frame":scene.frame,
         "units":{"coordinates":"Blender world units","meters_per_unit":scene.meters_per_unit},
         "scene_object_count":scene.objects.len(),
@@ -439,6 +470,46 @@ mod tests {
         assert_eq!(
             analyze(r).unwrap()["quality"]["status"],
             "constraints_failed"
+        );
+    }
+
+    #[test]
+    fn explicit_contact_detects_gaps_outside_returned_page_without_proving_overlap_contact() {
+        let mut r = request();
+        r.options.limit = 1;
+        r.options.contact_pairs = vec![
+            ["body".into(), "far".into()],
+            ["body".into(), "part".into()],
+        ];
+        let result = analyze(r).unwrap();
+        assert_eq!(
+            result["contact_checks"][0]["aabb_distance_lower_bound"],
+            3.0
+        );
+        assert_eq!(result["contact_checks"][0]["status"], "gap_detected");
+        assert_eq!(result["contact_checks"][1]["status"], "contact_unverified");
+        assert_eq!(result["quality"]["error_count"], 1);
+    }
+
+    #[test]
+    fn contact_checks_reject_invalid_targets_and_respect_tolerance() {
+        let mut r = request();
+        r.options.contact_pairs = vec![["body".into(), "body".into()]];
+        assert!(analyze(r).is_err());
+        let mut r = request();
+        r.options.object_id = Some("body".into());
+        r.options.contact_pairs = vec![["body".into(), "far".into()]];
+        assert!(analyze(r).is_err());
+        let mut r = request();
+        r.scene.objects[0].bounds = None;
+        r.options.contact_pairs = vec![["body".into(), "far".into()]];
+        assert!(analyze(r).is_err());
+        let mut r = request();
+        r.options.tolerance = 3.0;
+        r.options.contact_pairs = vec![["body".into(), "far".into()]];
+        assert_eq!(
+            analyze(r).unwrap()["contact_checks"][0]["status"],
+            "contact_unverified"
         );
     }
 }
