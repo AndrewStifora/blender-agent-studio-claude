@@ -16,6 +16,7 @@ render them, and find textures.
 - Render through your scene's cameras with its lighting intact, or use studio views to inspect a model from every side.
 - Download CC0 textures and HDRIs from Poly Haven at 1K, 2K, 4K, or 8K.
 - Check geometry and exported files, review renders, and repair what doesn't work.
+- Query scene parts and evaluated dimensions, then check explicit geometry and ground constraints with the optional Rust runtime.
 
 The plugin includes eleven specialist skills and a local MCP server for
 inspection, rendering, and asset downloads. Generated scenes come with Python
@@ -39,6 +40,11 @@ $env:BLENDER_EXECUTABLE = "C:\path\to\Blender\blender.exe"
 ```
 
 Start a new Codex task after installing or updating the plugin.
+
+For the optional scene-understanding tools, build the Rust runtime in the
+installed plugin directory with `bun run setup:runtime`. See
+[scene understanding](docs/scene-understanding.md) for setup, examples and
+measurement limits. The existing tools do not require Rust.
 
 <details>
 <summary>Update an existing GitHub installation</summary>

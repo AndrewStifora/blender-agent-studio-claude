@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup:runtime": "cargo build --release --locked --manifest-path runtime/Cargo.toml",
+    "test:runtime": "cargo test --locked --manifest-path runtime/Cargo.toml",
     "mcp": "bun mcp/server.ts",
     "test": "bun test",
     "test:python": "python scripts/test-python.py",

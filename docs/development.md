@@ -12,10 +12,17 @@ bun install --cwd plugins/blender-agent-studio
 bun run check
 bun run test
 bun run test:python
+bun --cwd plugins/blender-agent-studio run setup:runtime
+bun --cwd plugins/blender-agent-studio run test:runtime
 ```
 
 Set `BLENDER_EXECUTABLE` or put Blender on `PATH` to run the live Blender tests.
 Without Blender, the Python suite skips those tests and runs the settings tests.
+Build the runtime before `bun run test` to include the Rust protocol tests.
+With Blender and the runtime present, the Bun suite also exercises SceneIR
+extraction, both MCP tools and a fresh GLB import. CI builds/tests Rust but
+skips live Blender tests when Blender is unavailable. See the
+[SceneIR contract and evidence boundaries](scene-understanding.md).
 
 After editing `plugins/blender-agent-studio/references/astra-workflow.md`, run:
 

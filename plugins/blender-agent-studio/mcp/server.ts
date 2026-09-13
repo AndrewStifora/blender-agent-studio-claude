@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { describeAsset } from "../scripts/scene-analysis.ts";
 import { createPolyHavenClient } from "../skills/blender-rendering-workflow/scripts/poly-haven.ts";
 import {
   readJsonFile,
@@ -242,5 +243,38 @@ server.registerTool("blender_download_polyhaven_asset", {
 }, async (options) => {
   try {return result(await polyHaven.download(options));} catch(error) {return errorResult(error);}
 });
+
+const sceneSchema = z.object({
+  assetPath: z.string(), outputJson: z.string().optional().describe("Optional new JSON file for full SceneIR and analysis. Parent directory must exist."),
+  objectId: z.string().optional().describe("Exact object ID from describe_scene; omit for whole active scene."),
+  includeDescendants: z.boolean().default(true),
+  offset: z.number().int().min(0).max(2048).default(0),
+  limit: z.number().int().min(1).max(200).default(40),
+  proximity: z.number().min(0).max(1e9).default(0.01).describe("World-unit AABB proximity threshold; not surface distance."),
+  groundZ: z.number().min(-1e12).max(1e12).optional(),
+  groundObjects: z.array(z.string()).max(200).default([]).describe("Only explicitly named objects are checked against groundZ."),
+  tolerance: z.number().min(0).max(1e9).default(0.001),
+  triangleBudget: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  requireClosedMesh: z.boolean().default(false),
+  blenderPath: z.string().optional(),
+  timeoutMs: z.number().int().min(1000).max(1_800_000).default(300_000),
+});
+
+for (const name of ["blender_describe_scene", "blender_quality_report"] as const) {
+  server.registerTool(name, {
+    title: name === "blender_describe_scene" ? "Describe Blender scene" : "Blender quality report",
+    description: name === "blender_describe_scene"
+      ? "Extract SceneIR and analyze with the Rust runtime. Returns compact evaluated bounds, authored roles, hierarchy and paginated AABB relation candidates. Read-only; requires setup:runtime."
+      : "Evaluate explicit triangle, closed-mesh and named ground constraints with the Rust runtime. Returns measurable findings and required visual-review questions, never an aesthetic score. Constraints cover the full selected assembly, independent of pagination. Read-only; requires setup:runtime.",
+    inputSchema: sceneSchema,
+  }, async ({ assetPath, outputJson, blenderPath, timeoutMs, objectId, includeDescendants, offset, limit, proximity, groundZ, groundObjects, tolerance, triangleBudget, requireClosedMesh }) => {
+    try {
+      if (groundObjects.length && groundZ === undefined) throw new Error("groundObjects requires explicit groundZ");
+      return result(await describeAsset({ assetPath, outputJson, blenderPath, timeoutMs,
+        options: { object_id: objectId, include_descendants: includeDescendants, offset, limit, proximity,
+          ground_z: groundZ, ground_objects: groundObjects, tolerance, triangle_budget: triangleBudget, require_closed_mesh: requireClosedMesh } }));
+    } catch (error) { return errorResult(error); }
+  });
+}
 
 await server.connect(new StdioServerTransport());

@@ -68,6 +68,20 @@ Measure skill changes on one fixed model before comparing different models.
 - A local MCP with exact Blender version, asset inspection, and evidence render
   tools. It deliberately does not expose generic arbitrary Python execution.
 
+## Scene understanding
+
+The optional Rust runtime powers `blender_describe_scene` and
+`blender_quality_report`. With Rust installed, run `bun run setup:runtime` from
+this directory, then start a new Codex task. Rebuild after plugin updates, or set
+`BAS_RUNTIME_EXECUTABLE` to a compatible compiled runtime. Existing tools do not
+require Rust.
+
+Describe a scene first, then focus on an exact `objectId` and its descendants.
+The report separates measured geometry constraints from required visual review.
+Bounds overlap is a candidate, not a proven mesh intersection. See the
+[SceneIR guide](https://github.com/ifBars/blender-agent-studio/blob/main/docs/scene-understanding.md)
+for examples, setup and limits.
+
 ## Use
 
 Invoke the modeling skill in a fresh Codex task:

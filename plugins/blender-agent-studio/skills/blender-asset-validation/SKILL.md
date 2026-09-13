@@ -36,6 +36,25 @@ Inspect:
 
 Interpret metrics using [references/quality-gates.md](references/quality-gates.md). Do not apply printing-only topology rules to every game asset.
 
+## Understand the scene before diagnosing a repair
+
+When the Rust runtime is configured, use `blender_describe_scene` for evaluated
+world bounds, authored `bas_role` labels, parenting and paginated object summaries.
+Focus with an exact `objectId` and `includeDescendants`; follow `next_offset` for
+large selections. An assembly follows object parenting, not collection names.
+
+Use `blender_quality_report` with only brief-derived `triangleBudget`,
+`requireClosedMesh`, or named `groundObjects` and an explicit `groundZ`.
+Distances are in Blender world units. Constraints cover the full selection;
+spatial candidates only compare the returned page. AABB overlap and proximity
+are review candidates, not proven mesh intersections, contact or support.
+Read extraction limitations, especially unexpanded instances and non-mesh forms.
+
+The report never clears visual review: `review_required` is not a pass. Open the
+fixed views below and answer its primary-form, reference and finish questions.
+If the runtime is missing, follow its setup message or continue with the existing
+inspector and visual evidence; do not claim unmeasured analysis.
+
 ## Render evidence
 
 The default `presentation: "auto"` selects a studio background using a

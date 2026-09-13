@@ -19,6 +19,20 @@ Use the narrowest MCP layer that improves the task.
 
 Read [references/mcp-options.md](references/mcp-options.md) before installing or replacing a Blender add-on.
 
+## Optional scene analysis runtime
+
+`blender_describe_scene` and `blender_quality_report` use the bundled Rust
+SceneIR analyzer. Run `bun run setup:runtime` in the installed plugin root with
+a stable Rust toolchain, or set `BAS_RUNTIME_EXECUTABLE` to a compatible built
+binary. Rebuild after updates. The existing tools remain independent of Rust.
+
+Start with a compact scene description, then query an exact `objectId` and its
+descendants. Bounds use evaluated world geometry. Semantic roles come only from
+authored `bas_role` properties. Supply quality constraints from the brief;
+ground checks require named objects and `groundZ`. AABB relations are candidates,
+not exact mesh intersections. Keep the returned limitations and required visual
+questions attached to the findings. No numerical aesthetic score is produced.
+
 ## Preserve reproducibility
 
 - Keep the durable model in a Python source file even when using live MCP execution.
