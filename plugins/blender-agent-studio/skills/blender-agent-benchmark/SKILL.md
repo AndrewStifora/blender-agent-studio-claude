@@ -16,7 +16,7 @@ Measure changes with the same tasks, model, effort, limits, Blender build, and e
 2. Do not leave the other condition's code, renders, metrics, or expected fixes where the agent can discover them.
 3. Keep the user-facing task prompt identical except for explicit skill invocation in the plugin condition.
 4. Use `codex exec --ignore-user-config` for the no-plugin baseline.
-5. Use the installed plugin in a fresh invocation for the plugin condition.
+5. Use a pinned plugin directory in a fresh invocation for the plugin condition. The default is the plugin containing the runner; `--skill-root` selects a different snapshot.
 6. Record CLI version, model, effort, Blender build, duration, tool calls, failures, and output hashes.
 7. Evaluate outputs after generation. Do not leak hidden rubric details to the agent.
 
@@ -131,6 +131,25 @@ evaluation. Equivalent results prove transport correctness, not a modeling
 quality gain.
 
 ## Compare conditions
+
+The runner disables global plugins, memories, host skill entries and automatic
+project instruction injection with process-local CLI arguments, while retaining
+explicitly prompted snapshot skills and MCP. It does not edit user configuration.
+`--ignore-user-config` alone does not isolate host skills. Confirm these controls
+on the installed CLI before a campaign; unsupported switches or overly large
+Windows argument lists must be resolved before launching benchmark generations.
+
+Pinned plugin runs ignore user configuration and load the selected skills by
+path. In `skills_mcp` mode, the runner explicitly starts that snapshot's
+`mcp/server.ts` as `bas_benchmark`, checks its tool inventory, and records it
+with a source fingerprint. Confirm actual new-tool use in the agent trace;
+an available tool that was never called cannot establish its modeling benefit.
+Agent events and stderr are written live, with a PID record for unattended
+monitoring. Check the process and final process record before restarting work.
+
+Keep judging identities in memory until judging finishes. Do not place a
+condition-mapping file in a judge's working directory. Use identical judge
+models and effort across pairs and record the selected model explicitly.
 
 Keep these dimensions separate:
 

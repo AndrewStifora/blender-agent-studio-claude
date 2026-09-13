@@ -6,6 +6,7 @@ import {
   type VisualCriterion,
 } from "./tasks.ts";
 import { computeVerifiedCompositeScore } from "./verified_score.ts";
+import { isolatedAgentArgs } from "./pinned-mcp.ts";
 
 type RunResult = {
   taskId: string;
@@ -182,8 +183,7 @@ async function judgePair(options: {
   const args = [
     "exec",
     "--ephemeral",
-    "--ignore-user-config",
-    "--ignore-rules",
+    ...isolatedAgentArgs(),
     "--skip-git-repo-check",
     "--sandbox",
     "read-only",
@@ -495,11 +495,8 @@ async function main(): Promise<void> {
       const mapping = reverse
         ? { A: candidate.mode, B: baseline.mode }
         : { A: baseline.mode, B: candidate.mode };
-      await writeFile(
-        join(judgeDir, "mapping.hidden.json"),
-        JSON.stringify(mapping, null, 2),
-        "utf8",
-      );
+      // Keep identities in memory until the completed comparison report.
+      // A file named "hidden" in the judge's directory is still readable.
       const criterionPrompt = task.visualCriteria
         .map(
           (criterion) =>
@@ -509,6 +506,8 @@ async function main(): Promise<void> {
       const prompt = `You are a strict blinded 3D asset art director. The first attached contact sheet is candidate A and the second is candidate B. Both show fixed perspective, front, back, left, right, and top views of assets made from the same request.${animationPrompt}
 
 Compare only visible evidence. Do not infer quality from filenames or likely generation method. Penalize floating or mechanically unexplained parts, accidental intersections, weak silhouettes, incoherent proportions, missing requested relationships, generic primitive assembly, visible faceting when smooth finish was requested, unwanted smoothing when low-poly was requested, blockout residue, razor edges, poor texture or material separation, inconsistent detail, broken lighting, broken views, and presentation tricks that hide defects. Reward clear task fidelity, plausible construction, readable primary through tertiary forms, intentional surface refinement, coherent materials and textures, balanced presentation, and consistency across every view. A technically valid model that still looks like a graybox should score poorly on finalStageCompleteness. A tie is valid.
+
+Use only the attached images and this brief. Do not inspect source code, directory listings, other submissions, condition mappings, or earlier judgments.
 
 Task: ${baselineResult.taskTitle}
 Finish profile: ${task.rubric.finishProfile}

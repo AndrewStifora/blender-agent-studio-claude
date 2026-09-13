@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -11,6 +11,7 @@ import { scoreSubmission, type VideoEvidence } from "./score.ts";
 import { BENCHMARK_TASKS, type BenchmarkTask } from "./tasks.ts";
 import { summarizeAgentEvents } from "./trace.ts";
 import { resolveModelOptions } from "./model-options.ts";
+import { isolatedAgentArgs, pinnedMcpArgs, preflightPinnedMcp, sourceFingerprint } from "./pinned-mcp.ts";
 
 type Mode = "baseline" | "skills" | "skills_mcp";
 type Suite = "smoke" | "quick" | "full" | "challenge" | "gauntlet";
@@ -56,7 +57,8 @@ function parseOptions(): Options {
     reasoning: argument("--reasoning"),
   });
   const skillRootArg = argument("--skill-root");
-  const skillRoot = skillRootArg ? resolve(skillRootArg) : undefined;
+  // Pin even the default plugin condition, rather than loading arbitrary user plugins.
+  const skillRoot = mode === "baseline" ? undefined : resolve(skillRootArg ?? join(import.meta.dir, "../../.."));
   if (skillRoot && !existsSync(join(skillRoot, "skills"))) {
     throw new Error(`Skill root has no skills directory: ${skillRoot}`);
   }
@@ -141,6 +143,7 @@ type CodexRunOptions = {
   timeoutMs: number;
   bypassApprovals: boolean;
   skillRootPinned: boolean;
+  skillRoot?: string;
 };
 
 export function buildCodexArgs(options: CodexRunOptions): string[] {
@@ -161,8 +164,10 @@ export function buildCodexArgs(options: CodexRunOptions): string[] {
   } else {
     args.push("--sandbox", "danger-full-access");
   }
-  if (options.mode === "baseline" || options.skillRootPinned) {
-    args.push("--ignore-user-config", "--ignore-rules");
+  args.push(...isolatedAgentArgs());
+  if (options.mode === "skills_mcp") {
+    if (!options.skillRoot) throw new Error("MCP benchmarks require a pinned skillRoot");
+    args.push(...pinnedMcpArgs(options.skillRoot));
   }
   if (options.model) {
     args.push("--model", options.model);
@@ -181,27 +186,31 @@ async function runCodex(options: CodexRunOptions): Promise<{
 }> {
   const args = buildCodexArgs(options);
   const started = performance.now();
+  const eventsPath = join(options.cwd, "agent-events.jsonl");
+  const stderrPath = join(options.cwd, "agent-stderr.log");
+  await Promise.all([writeFile(eventsPath,"",{flag:"wx"}),writeFile(stderrPath,"",{flag:"wx"})]);
   const proc = Bun.spawn(["codex", ...args], {
     cwd: options.cwd,
     stdin: "pipe",
-    stdout: "pipe",
-    stderr: "pipe",
+    stdout: Bun.file(eventsPath),
+    stderr: Bun.file(stderrPath),
     windowsHide: true,
   });
   proc.stdin.write(options.prompt);
   proc.stdin.end();
+  await writeFile(join(options.cwd, "agent-running.json"), JSON.stringify({
+    pid: proc.pid, startedAt: new Date().toISOString(), timeoutMs: options.timeoutMs,
+    command: ["codex", ...args.slice(0, -1), "<prompt-via-stdin>"],
+  }, null, 2));
 
   let timedOut = false;
   const timer = setTimeout(() => {
     timedOut = true;
     proc.kill();
   }, options.timeoutMs);
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ]);
+  const exitCode = await proc.exited;
   clearTimeout(timer);
+  const [stdout, stderr] = await Promise.all([readFile(eventsPath, "utf8"), readFile(stderrPath, "utf8")]);
   return {
     command: ["codex", ...args.slice(0, -1), "<prompt-via-stdin>"],
     exitCode,
@@ -482,6 +491,9 @@ async function main(): Promise<void> {
     ].sort(),
     bypassApprovals: options.bypassApprovals,
     skillRoot: options.skillRoot ?? null,
+    isolationArgs: isolatedAgentArgs(),
+    skillFingerprint: options.skillRoot ? sourceFingerprint(options.skillRoot) : null,
+    mcpPreflight: options.mode === "skills_mcp" ? await preflightPinnedMcp(options.skillRoot!) : null,
   };
   await writeFile(
     join(options.output, "run-manifest.json"),
@@ -516,6 +528,7 @@ async function main(): Promise<void> {
         timeoutMs: options.timeoutMinutes * 60_000,
         bypassApprovals: options.bypassApprovals,
         skillRootPinned: Boolean(options.skillRoot),
+        skillRoot: options.skillRoot,
       });
       await writeFile(
         join(workdir, "agent-process.json"),

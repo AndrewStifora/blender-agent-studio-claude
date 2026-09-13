@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { buildCodexArgs, pluginPrefix } from "./run_benchmark.ts";
 import { resolveModelOptions } from "./model-options.ts";
 import { BENCHMARK_TASKS } from "./tasks.ts";
+import { resolve } from "node:path";
 
 describe("pluginPrefix", () => {
   test("loads iterative refinement only for the opt-in gauntlet", () => {
@@ -77,14 +78,32 @@ describe("benchmark execution isolation", () => {
     expect(args.at(-1)).toBe("-");
   });
 
-  test("loads installed skills only for an unpinned plugin condition", () => {
-    expect(buildCodexArgs({ ...base, mode: "skills" })).not.toContain("--ignore-user-config");
+  test("isolates global instructions, skills, plugins and memories for every condition", () => {
+    expect(buildCodexArgs({ ...base, mode: "skills" })).toContain("--ignore-user-config");
     expect(buildCodexArgs({ ...base, mode: "skills", skillRootPinned: true })).toContain("--ignore-user-config");
+    for (const mode of ["baseline", "skills"] as const) {
+      const args = buildCodexArgs({...base,mode});
+      expect(args.some(value => value.startsWith("skills.config=["))).toBe(true);
+      expect(args).toContain("plugins");
+      expect(args).toContain("memories");
+      expect(args).toContain("project_doc_max_bytes=0");
+    }
   });
 
   test("does not expand permissions when selecting a model", () => {
     const args = buildCodexArgs({ ...base, mode: "baseline" });
     expect(args).not.toContain("--dangerously-bypass-approvals-and-sandbox");
     expect(buildCodexArgs({ ...base, mode: "baseline", bypassApprovals: true })).toContain("--dangerously-bypass-approvals-and-sandbox");
+  });
+
+  test("pinned MCP mode wires exactly the requested server despite ignoring user config", () => {
+    const skillRoot = resolve(import.meta.dir, "../../..");
+    const args = buildCodexArgs({...base, mode:"skills_mcp",skillRootPinned:true,skillRoot});
+    expect(args).toContain("--ignore-user-config");
+    expect(args).toContain('mcp_servers.bas_benchmark.command="bun"');
+    expect(args).toContain(`mcp_servers.bas_benchmark.cwd=${JSON.stringify(skillRoot)}`);
+    expect(args.some(value => value.includes("mcp/server.ts") || value.includes("mcp\\\\server.ts"))).toBe(true);
+    expect(() => buildCodexArgs({...base,mode:"skills_mcp"})).toThrow("pinned skillRoot");
+    expect(buildCodexArgs({...base,mode:"skills",skillRootPinned:true,skillRoot}).some(value => value.startsWith("mcp_servers."))).toBe(false);
   });
 });
