@@ -118,12 +118,20 @@ open multiview evidence and assess silhouette, proportion, supports,
 intersections, readability, orientation, and requested details. Open individual
 views at original detail when the contact sheet cannot resolve a defect.
 
-When scene analysis is available, declare intended touching mesh pairs from the
-construction contract as `contactPairs` in `blender_quality_report`. Check each
-actual joint through intermediate hardware. Repair `expected_contact_gap`
-findings before detailing; close or overlapping bounds remain
-`contact_unverified` and require visual inspection. Preserve these constraints
-across iterations so a later proportion change cannot silently separate parts.
+For a suspected detached joint, use construction-derived `contactPairs` in
+`blender_quality_report` to confirm definite separation. Check the actual
+connections through intermediate hardware. Close or overlapping bounds remain
+`contact_unverified`; numerical checks never replace visual finish review.
+Preserve useful declared constraints across subsequent geometry changes.
+
+For a local repair, preserve the last good source and change the smallest area
+that resolves the visible defect. Keep successful silhouette, proportions,
+bevels, material separation and secondary detail. Do not simplify the whole
+asset to clear a diagnostic. Request `views: ["perspective", "front"]` (or the
+two angles that reveal the defect), `resolution: 256`, and a fixed presentation
+for a fast before/after preview. Review whether the repair also lost edge
+refinement, glass depth, material readability or construction detail. Retain it
+only if the visible result improves; then run final evidence once.
 
 Use `$blender-agent-studio:blender-asset-validation` for early fresh-import
 checks when a change risks export behavior and for full final inspection and

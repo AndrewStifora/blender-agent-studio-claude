@@ -29,6 +29,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--resolution", type=int, default=384)
+    parser.add_argument("--views", default="perspective,front,back,left,right,top",
+                        help="Comma-separated fixed views; use perspective,front for a quick repair preview.")
     parser.add_argument("--frames", default="")
     parser.add_argument("--material-mode", choices=("source", "vrchat-fit"), default="source")
     parser.add_argument("--hide-objects", default="")
@@ -328,6 +330,10 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     resolution = max(128, min(int(args.resolution), 1024))
     frames = [int(value) for value in args.frames.split(",") if value.strip()]
+    requested_views = [value.strip() for value in args.views.split(",") if value.strip()]
+    allowed_views = {"perspective", "front", "back", "left", "right", "top"}
+    if not requested_views or len(set(requested_views)) != len(requested_views) or not set(requested_views) <= allowed_views:
+        raise ValueError("Views must be unique fixed names: perspective,front,back,left,right,top")
 
     if not input_path.is_file():
         raise FileNotFoundError(input_path)
@@ -359,6 +365,8 @@ def main() -> None:
         ("right", Vector((1.0, 0.0, 0.05)), True),
         ("top", Vector((0.0, 0.0, 1.0)), True),
     ]
+    view_by_name = {view[0]: view for view in views}
+    views = [view_by_name[name] for name in requested_views]
     paths = [
         render_view(
             camera,
@@ -408,6 +416,8 @@ def main() -> None:
         "input": str(input_path),
         "blender_version": bpy.app.version_string,
         "resolution": resolution,
+        "requested_views": requested_views,
+        "evidence_scope": "full_multiview" if set(requested_views) == allowed_views else "partial_preview",
         "material_mode": args.material_mode,
         "hidden_objects": sorted(hidden_names),
         "head_texture": str(Path(args.head_texture).resolve()) if args.head_texture else None,

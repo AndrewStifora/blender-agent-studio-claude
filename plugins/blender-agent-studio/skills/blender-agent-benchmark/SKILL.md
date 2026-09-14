@@ -28,6 +28,31 @@ Read [references/validated-results.md](references/validated-results.md) only
 when reviewing the plugin's recorded validation result, not while generating a
 benchmark submission.
 
+## Fast development loop
+
+Start improvements from saved failure evidence, not another full generation
+suite. Default to a five-minute wall-clock budget for one targeted repair:
+
+1. Identify the highest-impact visible defect in an existing saved asset.
+2. Copy its durable source and inputs into a new repair directory. Preserve the
+   original asset and images as the before condition.
+3. Use Luna or Terra for one local source repair. Preserve good proportions,
+   silhouette, materials and detail outside the affected area; do not rebuild
+   the asset from scratch or simplify it to satisfy a numerical check.
+4. Regenerate once and request two relevant fixed views at resolution 256 with
+   `blender_render_evidence`, the same explicit presentation and framing inputs
+   for before and after. Open the images; inspect full-size views if needed.
+5. Use one Astra visual review to check the stated defect and collateral loss
+   of finish. Keep the original if the repair does not visibly help. Record
+   elapsed time, exact source changes and any unresolved weakness.
+
+This is a repair demonstration, not evidence of a general model capability
+gain. Reuse existing deterministic metrics when their inputs are unchanged.
+Run affected technical tests after the edit; do the full export/multiview gate
+once on a retained candidate. Reserve repeated from-scratch generations and
+multiple independent judges for a release-level capability claim or an explicit
+request. Do not turn a small repair into an unattended multi-hour campaign.
+
 ## Run the suites
 
 For Astra, pass `--profile astra` (model `gpt-6-astra`, effort `medium`). The

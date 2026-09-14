@@ -67,6 +67,13 @@ durable source, and rerun the same declared pairs before retaining the repair.
 
 ## Render evidence
 
+During a targeted repair, use `views: ["perspective", "front"]` (or two useful
+fixed angles) and `resolution: 256` for quick feedback. The CLI accepts
+`--views perspective,front`. The manifest labels this `partial_preview`;
+it does not satisfy the final six-view gate. Preserve the same view selection,
+resolution and explicit presentation for before/after inspection. Render the
+full set once the repair is retained, rather than at every small edit.
+
 The default `presentation: "auto"` selects a studio background using a
 constant-material luminance hint: dark for bright assets, light for very dark
 assets, neutral slate otherwise. The CLI equivalent is `--presentation auto`.

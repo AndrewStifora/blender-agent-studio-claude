@@ -123,6 +123,10 @@ server.registerTool(
       assetPath: z.string(),
       outputDir: z.string(),
       resolution: z.number().int().min(128).max(1024).default(384),
+      views: z.array(z.enum(["perspective", "front", "back", "left", "right", "top"]))
+        .min(1).max(6).refine(values => new Set(values).size === values.length, "Views must be unique")
+        .default(["perspective", "front", "back", "left", "right", "top"])
+        .describe("Use two relevant views at resolution 256 for fast repair previews. Partial views do not replace final multiview validation."),
       presentation: z.enum(["auto", "neutral", "dark", "light"]).default("auto")
         .describe("Adaptive contrast by default; pin a studio preset for repeatable comparisons."),
       animationFrames: z.array(z.number().int().min(0)).max(12).default([]),
@@ -134,6 +138,7 @@ server.registerTool(
     assetPath,
     outputDir,
     resolution,
+    views,
     presentation,
     animationFrames,
     blenderPath,
@@ -149,6 +154,8 @@ server.registerTool(
         resolvedOutput,
         "--resolution",
         String(resolution),
+        "--views",
+        views.join(","),
         "--presentation",
         presentation,
       ];
