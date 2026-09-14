@@ -288,19 +288,20 @@ server.registerTool(
       maxEdge: z.number().int().min(128).max(4096).default(1280),
       samples: z.number().int().min(1).max(4096).default(64).describe("Cycles sample cap; does not raise authored samples."),
       device: z.enum(["auto", "cpu", "OPTIX", "CUDA", "HIP", "METAL", "ONEAPI"]).default("auto"),
+      denoise: z.enum(["preserve", "preview", "final", "off"]).default("preserve").describe("Cycles denoising policy. Preview favors GPU speed; final favors OIDN quality. Preserve leaves authored settings; off disables render denoising only. Compositor denoising remains authored."),
       timeLimitSeconds: z.number().int().min(1).max(1800).default(120).describe("Per-render Cycles time limit; whole process also bounded by timeoutMs."),
       blenderPath: z.string().optional(),
       timeoutMs: z.number().int().min(1000).max(1_800_000).default(600_000),
     }),
   },
-  async ({assetPath, outputDir, inspectOnly, scene, cameras, frames, maxEdge, samples, device, timeLimitSeconds, blenderPath, timeoutMs}) => {
+  async ({assetPath, outputDir, inspectOnly, scene, cameras, frames, maxEdge, samples, device, denoise, timeLimitSeconds, blenderPath, timeoutMs}) => {
     try {
       if (Math.max(1, cameras.length) * Math.max(1, frames.length) > 12) {
         throw new Error("At most 12 camera/frame combinations are allowed");
       }
       const resolvedOutput = resolve(outputDir);
       const args = ["--input", resolve(assetPath), "--output-dir", resolvedOutput,
-        "--max-edge", String(maxEdge), "--samples", String(samples), "--device", device,
+        "--max-edge", String(maxEdge), "--samples", String(samples), "--device", device, "--denoise", denoise,
         "--time-limit", String(timeLimitSeconds)];
       if (inspectOnly) args.push("--inspect-only");
       if (scene) args.push(`--scene=${scene}`);

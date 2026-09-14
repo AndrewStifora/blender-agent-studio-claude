@@ -44,6 +44,38 @@ management. `blender_render_evidence` deliberately replaces cameras and lighting
 use it for standardized geometry checks, not as an interior's final image.
 Neither tool substitutes for authoring the scene in durable source.
 
+## Choose denoising for the task
+
+Regular low-resolution renders use render denoising settings, not Blender's
+viewport preview settings. Select `denoise: "preview"` for look-development
+renders and `denoise: "final"` for final stills when residual noise is visible.
+The CLI equivalent is `--denoise preview` or `--denoise final`.
+
+- Preview: prefer supported GPU OpenImageDenoise Fast with Fast prefilter;
+  otherwise GPU OptiX when supported, then CPU OIDN Fast. Use a modest sample
+  cap (for example 16-32) and 512-800px while checking composition and materials.
+- Final: OpenImageDenoise High, Accurate prefilter, Color + Albedo + Normal,
+  with GPU acceleration when supported and CPU fallback otherwise. Start from
+  the scene's useful sample budget; do not raise samples just because it is final.
+- `denoise: "off"` disables render denoising for an already-clean image or a
+  raw noise/detail check. It does not disable an authored compositor denoiser.
+- `denoise: "preserve"` is the backward-compatible default for deliberately
+  authored settings and reproducible comparisons.
+
+Inspect texture, fine edges, contact shadows and reflections at delivery size.
+When a surface looks smeared, compare a small raw crop or matching no-denoise
+preview before increasing samples. Use one denoising stage; an existing active
+compositor denoiser makes preview/final policy defer to the authored setup.
+Read the manifest's actual settings and fallback reasons. Denoising cannot
+repair inadequate geometry, missing texture or poor lighting; no pixel-based
+noise detector is implied by these policies. For animation, inspect consecutive
+frames for flicker before committing to a sequence.
+
+The local mug/linen test favored GPU OIDN over CPU OIDN for inexpensive previews;
+this is a hardware/scene-specific result, not a universal speed ranking.
+See [Blender sampling documentation](https://docs.blender.org/manual/en/latest/render/cycles/render_settings/sampling.html)
+for denoiser, prefilter and quality tradeoffs.
+
 ## Establish the render contract
 
 Before changing the scene, record:

@@ -27,6 +27,7 @@ def arguments():
     p.add_argument('--max-edge', type=int, default=1280)
     p.add_argument('--samples', type=int, default=64)
     p.add_argument('--device', choices=['auto', 'cpu', 'OPTIX', 'CUDA', 'HIP', 'METAL', 'ONEAPI'], default='auto')
+    p.add_argument('--denoise', choices=['preserve', 'preview', 'final', 'off'], default='preserve')
     p.add_argument('--time-limit', type=int, default=120)
     a = p.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else [])
     if not 128 <= a.max_edge <= 4096 or not 1 <= a.samples <= 4096 or not 1 <= a.time_limit <= 1800:
@@ -115,6 +116,129 @@ def configure_device(scene, requested):
     return {'requested': requested, 'effective': 'CPU', 'devices': [], 'fallback': 'No supported GPU discovered'}
 
 
+def active_compositor_denoise_nodes(scene):
+    """Return potential active authored Denoise nodes without changing them."""
+    if not scene.render.use_compositing or not getattr(scene, 'use_nodes', False):
+        return []
+    tree = getattr(scene, 'compositing_node_group', None) or getattr(scene, 'node_tree', None)
+    if tree is None:
+        return []
+    found, visited = [], set()
+    def visit(current, prefix):
+        pointer = current.as_pointer()
+        if pointer in visited:
+            return
+        visited.add(pointer)
+        for node in current.nodes:
+            if node.mute:
+                continue
+            name = f'{prefix}/{node.name}'
+            if node.type == 'DENOISE':
+                found.append(name)
+            elif node.type == 'GROUP' and getattr(node, 'node_tree', None):
+                visit(node.node_tree, name)
+    visit(tree, tree.name)
+    return found
+
+
+def _set_cycles_value(cycles, name, value):
+    """Set an RNA value only when this Blender build exposes and accepts it."""
+    if not hasattr(cycles, name):
+        return False
+    try:
+        setattr(cycles, name, value)
+        return getattr(cycles, name) == value
+    except (TypeError, ValueError, RuntimeError):
+        return False
+
+
+def configure_denoising(scene, requested, device):
+    """Apply the bounded render denoise policy and return manifest-safe facts.
+
+    This deliberately never adds compositor nodes.  An existing active compositor
+    Denoise node remains the author's responsibility, because enabling Cycles
+    denoising as well would double-filter its image.
+    """
+    if scene.render.engine != 'CYCLES':
+        return {'requestedPolicy': requested, 'effectivePolicy': 'engine-managed',
+                'denoiser': None, 'quality': None, 'prefilter': None, 'gpu': None,
+                'decisionReason': 'Render engine is not Cycles.',
+                'compositorDenoiseNodes': []}
+
+    cycles = scene.cycles
+    nodes = active_compositor_denoise_nodes(scene)
+    authored = {
+        'denoiser': getattr(cycles, 'denoiser', None),
+        'quality': getattr(cycles, 'denoising_quality', None),
+        'prefilter': getattr(cycles, 'denoising_prefilter', None),
+        'gpu': getattr(cycles, 'denoising_use_gpu', None),
+    }
+    if requested == 'preserve':
+        return {'requestedPolicy': requested, 'effectivePolicy': 'preserve',
+                'denoiser': authored['denoiser'], 'quality': authored['quality'],
+                'prefilter': authored['prefilter'], 'gpu': authored['gpu'],
+                'renderDenoisingEnabled': cycles.use_denoising,
+                'decisionReason': 'Preserved authored Cycles denoising settings.',
+                'compositorDenoiseNodes': nodes}
+    if requested == 'off':
+        cycles.use_denoising = False
+        return {'requestedPolicy': requested, 'effectivePolicy': 'off',
+                'denoiser': getattr(cycles, 'denoiser', None),
+                'quality': getattr(cycles, 'denoising_quality', None),
+                'prefilter': getattr(cycles, 'denoising_prefilter', None),
+                'gpu': getattr(cycles, 'denoising_use_gpu', None),
+                'renderDenoisingEnabled': False,
+                'decisionReason': 'Disabled Cycles render denoising; compositor denoising is unchanged.',
+                'compositorDenoiseNodes': nodes}
+    if nodes:
+        return {'requestedPolicy': requested, 'effectivePolicy': 'preserve',
+                'denoiser': authored['denoiser'], 'quality': authored['quality'],
+                'prefilter': authored['prefilter'], 'gpu': authored['gpu'],
+                'renderDenoisingEnabled': cycles.use_denoising,
+                'decisionReason': 'Preserved authored denoising because active compositor Denoise nodes would double-filter.',
+                'compositorDenoiseNodes': nodes}
+
+    # These Cycles preference APIs report actual denoiser-device support. Do
+    # not infer it from the render backend or merely from a listed GPU.
+    prefs = bpy.context.preferences.addons['cycles'].preferences
+    def supports(method):
+        try:
+            return device.get('effective') != 'CPU' and bool(getattr(prefs, method)())
+        except (AttributeError, RuntimeError, TypeError):
+            return False
+    oidn_gpu = supports('has_oidn_gpu_devices')
+    optix_gpu = supports('has_optixdenoiser_gpu_devices')
+    # Repeated local still-life timings favor OIDN GPU FAST over OptiX for the
+    # bounded preview path. OptiX remains the next supported preview fallback.
+    use_optix = requested == 'preview' and not oidn_gpu and optix_gpu
+    desired_denoiser = 'OPENIMAGEDENOISE' if oidn_gpu or not use_optix else 'OPTIX'
+    if not _set_cycles_value(cycles, 'denoiser', desired_denoiser):
+        return {'requestedPolicy': requested, 'effectivePolicy': 'preserve',
+                'denoiser': authored['denoiser'], 'quality': authored['quality'],
+                'prefilter': authored['prefilter'], 'gpu': authored['gpu'],
+                'renderDenoisingEnabled': cycles.use_denoising,
+                'decisionReason': f'{desired_denoiser} is unavailable in this Blender build; preserved authored settings.',
+                'compositorDenoiseNodes': nodes}
+    cycles.use_denoising = True
+    _set_cycles_value(cycles, 'denoising_input_passes', 'RGB_ALBEDO_NORMAL')
+    if desired_denoiser == 'OPENIMAGEDENOISE':
+        _set_cycles_value(cycles, 'denoising_quality', 'FAST' if requested == 'preview' else 'HIGH')
+        _set_cycles_value(cycles, 'denoising_prefilter', 'FAST' if requested == 'preview' else 'ACCURATE')
+        _set_cycles_value(cycles, 'denoising_use_gpu', oidn_gpu)
+    return {'requestedPolicy': requested, 'effectivePolicy': requested,
+            'denoiser': getattr(cycles, 'denoiser', None),
+            'quality': getattr(cycles, 'denoising_quality', None),
+            'prefilter': getattr(cycles, 'denoising_prefilter', None),
+            'gpu': oidn_gpu or use_optix,
+            'inputPasses': getattr(cycles, 'denoising_input_passes', None),
+            'renderDenoisingEnabled': cycles.use_denoising,
+            'decisionReason': ('Preview uses supported OIDN GPU denoising.' if oidn_gpu and requested == 'preview'
+                               else ('Final uses supported OIDN GPU denoising.' if oidn_gpu
+                                     else ('Preview falls back to supported OptiX denoising.' if use_optix
+                                           else 'No supported OIDN GPU was discovered; using CPU OIDN.'))),
+            'compositorDenoiseNodes': nodes}
+
+
 def mute_file_outputs():
     # Preserve the artistic compositor; prevent its File Output nodes from
     # writing to paths embedded in the source (including shared node groups).
@@ -149,8 +273,11 @@ def main():
     manifest_path = output / 'render-manifest.json'
     def save(): manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     save()
-    if a.inspect_only: return
     try:
+        if a.inspect_only: return
+        manifest['device'] = configure_device(scene, a.device)
+        manifest['denoise'] = configure_denoising(scene, a.denoise, manifest['device'])
+        save()
         cameras = a.cameras or ([scene.camera.name] if scene.camera else [])
         if not cameras: raise ValueError('No active camera; select an existing camera by name')
         for name in cameras:
@@ -171,7 +298,6 @@ def main():
         if scene.render.engine == 'CYCLES':
             scene.cycles.samples = min(scene.cycles.samples, a.samples)
             scene.cycles.time_limit = a.time_limit
-        manifest['device'] = configure_device(scene, a.device)
         manifest['effective'] = {'resolution': [scene.render.resolution_x, scene.render.resolution_y],
                                  'samples': scene.cycles.samples if scene.render.engine == 'CYCLES' else None,
                                  'timeLimitSeconds': a.time_limit if scene.render.engine == 'CYCLES' else None,

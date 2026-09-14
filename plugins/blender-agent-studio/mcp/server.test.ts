@@ -51,6 +51,7 @@ describe("Blender Agent Studio MCP", () => {
         enum: ["auto", "neutral", "dark", "light"], default: "auto",
       });
       const authored = listed.tools.find((tool) => tool.name === "blender_render_scene")!.inputSchema;
+      expect(authored.properties?.denoise).toMatchObject({enum: ["preserve", "preview", "final", "off"], default: "preserve"});
       expect(authored.properties?.inspectOnly).toMatchObject({default: false});
       expect(authored.properties?.maxEdge).toMatchObject({maximum: 4096});
       const invalid = await client.callTool({ name: "blender_render_scene", arguments: {

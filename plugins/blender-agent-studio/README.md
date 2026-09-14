@@ -68,6 +68,15 @@ Measure skill changes on one fixed model before comparing different models.
 - A local MCP with exact Blender version, asset inspection, and evidence render
   tools. It deliberately does not expose generic arbitrary Python execution.
 
+## Denoising by render stage
+
+`blender_render_scene` accepts `denoise: "preview"`, `"final"`, `"off"`, or
+`"preserve"` (default). Preview favors supported GPU OIDN Fast, with OptiX/CPU
+fallbacks. Final uses OIDN High/Accurate and supported GPU acceleration. The
+manifest reports actual settings and decisions; authored compositor denoising
+is preserved. Choose off for clean images and inspect detail before retaining
+filtering. Sample caps do not increase automatically.
+
 ## Reference framing and repair diagnostics
 
 `blender_fit_reference_camera` fits scale/focal length and lens shift from
