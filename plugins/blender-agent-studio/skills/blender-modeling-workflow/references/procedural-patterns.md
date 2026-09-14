@@ -33,6 +33,14 @@
 - Check for missing or magenta textures, crushed black materials, overexposure,
   and insufficient contrast in the actual render engine used for evidence.
 - Avoid relying on one camera or lighting setup to hide weak geometry.
+- Inspect transparent materials at the actual preview sample count. Dithered
+  alpha can make thin glass look grainy; increasing every render's sample count
+  is not the first repair. Check the installed Blender material render modes
+  and compare an alpha-blended pane when suitable. Inspect overlapping panes
+  from two angles for sorting artifacts; blending is not physical refraction.
+- Give transparent glazing restrained tint and emission so interior forms stay
+  readable. Preserve pane thickness, captured edges and bevels; reducing opacity
+  alone does not create convincing glass. Verify the exported material too.
 
 ## Animation
 
