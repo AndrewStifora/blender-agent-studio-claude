@@ -68,6 +68,18 @@ Measure skill changes on one fixed model before comparing different models.
 - A local MCP with exact Blender version, asset inspection, and evidence render
   tools. It deliberately does not expose generic arbitrary Python execution.
 
+## Reference framing and repair diagnostics
+
+`blender_fit_reference_camera` fits scale/focal length and lens shift from
+explicit reference landmarks, saving a candidate scene without changing meshes
+or camera pose. Review it with `blender_compare_reference` before retaining the
+parameters. This measures framing error, not overall modeling quality.
+
+`blender_diagnose_topology` locates degenerate faces and zero-length edges in
+evaluated world space, with exact object names and bounded element findings.
+Use these locations to target source repairs and recheck the exported asset.
+Open boundaries are not automatically classified as defects.
+
 ## Scene understanding
 
 The optional Rust runtime powers `blender_describe_scene` and

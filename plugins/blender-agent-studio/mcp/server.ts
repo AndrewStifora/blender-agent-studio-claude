@@ -44,6 +44,59 @@ function errorResult(error: unknown) {
 }
 
 server.registerTool(
+  "blender_fit_reference_camera",
+  {
+    title: "Fit reference camera framing",
+    description: "Fit scale/focal length and lens shift from 3-32 explicit 2D/3D correspondences. Fixed camera pose and geometry; saves a candidate .blend in a new directory. Review with blender_compare_reference before retaining parameters in durable source. This does not solve camera pose or prove model similarity.",
+    inputSchema: z.object({
+      assetPath: z.string(), outputDir: z.string(), cameraName: z.string().optional(),
+      referenceWidth: z.number().int().min(1).max(8192),
+      referenceHeight: z.number().int().min(1).max(8192),
+      landmarks: z.array(z.object({name: z.string(), objectName: z.string(),
+        referenceUv: z.array(z.number().min(0).max(1)).length(2),
+        localPoint: z.array(z.number()).length(3).default([0, 0, 0]),
+      })).min(3).max(32),
+      blenderPath: z.string().optional(),
+      timeoutMs: z.number().int().min(1000).max(300000).default(60000),
+    }),
+  },
+  async ({assetPath, outputDir, cameraName, referenceWidth, referenceHeight, landmarks, blenderPath, timeoutMs}) => {
+    try {
+      const output = resolve(outputDir);
+      const args = ["--input", resolve(assetPath), "--output-dir", output,
+        "--width", String(referenceWidth), "--height", String(referenceHeight),
+        "--landmarks-json", JSON.stringify(landmarks)];
+      if (cameraName) args.push("--camera", cameraName);
+      const process = await runBlender({blenderPath, scriptPath: join(validationScripts, "fit_reference_camera.py"), scriptArgs: args, timeoutMs});
+      if (process.exitCode !== 0 || process.timedOut) return {...result({process, report: null}), isError: true};
+      return result({process, report: await readJsonFile(join(output, "camera-fit.json"))});
+    } catch (error) { return errorResult(error); }
+  },
+);
+
+server.registerTool(
+  "blender_diagnose_topology",
+  {
+    title: "Locate degenerate mesh elements",
+    description: "Read-only evaluated-mesh diagnostics: counts and bounded world-space locations of degenerate faces and zero-length edges. Element indices refer to evaluated meshes, not editable source indices. Open boundaries are not classified as defects. Writes a new JSON file.",
+    inputSchema: z.object({assetPath: z.string(), outputJson: z.string(),
+      objectName: z.string().optional(), limit: z.number().int().min(1).max(100).default(20),
+      blenderPath: z.string().optional(), timeoutMs: z.number().int().min(1000).max(300000).default(60000)}),
+  },
+  async ({assetPath, outputJson, objectName, limit, blenderPath, timeoutMs}) => {
+    try {
+      const output = resolve(outputJson);
+      await mkdir(dirname(output), {recursive: true});
+      const args = ["--input", resolve(assetPath), "--output", output, "--limit", String(limit)];
+      if (objectName) args.push("--object", objectName);
+      const process = await runBlender({blenderPath, scriptPath: join(validationScripts, "diagnose_topology.py"), scriptArgs: args, timeoutMs});
+      if (process.exitCode !== 0 || process.timedOut) return {...result({process, report: null}), isError: true};
+      return result({process, outputJson: output, report: await readJsonFile(output)});
+    } catch (error) { return errorResult(error); }
+  },
+);
+
+server.registerTool(
   "blender_compare_reference",
   {
     title: "Compare model projection with a reference image",

@@ -61,7 +61,10 @@ tool: a name, exact `objectName`, `referenceUv` normalized from image top-left,
 and optional object-local `localPoint`. Use authored empties for stable feature
 anchors. Yellow/blue markers and signed pixel offsets provide precise feedback
 for Astra's visual diagnosis even without a mask. Check the camera first when
-many landmarks shift together; change local geometry when only a feature is
+many landmarks shift together. With plausible pose and at least three separated
+correspondences, `blender_fit_reference_camera` can fit framing in a candidate
+scene; review its overlay, retain accepted parameters in source, then freeze
+the camera. It does not solve orientation or position. Change local geometry when only a feature is
 wrong. In-frame projection does not prove that a point is visible.
 
 Treat “game-ready,” “stylized,” and “optimized” as quality constraints, not as

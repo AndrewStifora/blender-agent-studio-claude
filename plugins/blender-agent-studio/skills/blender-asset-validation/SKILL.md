@@ -36,6 +36,12 @@ Inspect:
 
 Interpret metrics using [references/quality-gates.md](references/quality-gates.md). Do not apply printing-only topology rules to every game asset.
 
+When inspection finds degenerate faces or zero-length edges, call
+`blender_diagnose_topology` with `assetPath`, a new `outputJson`, and optionally
+`objectName` and `limit`. It reports full counts and bounded world-space locations.
+Indices belong to evaluated geometry: locate the region, repair durable source,
+and reinspect the export. Open boundaries alone are not defects.
+
 ## Understand the scene before diagnosing a repair
 
 When the Rust runtime is configured, use `blender_describe_scene` for evaluated
@@ -73,6 +79,17 @@ overlay board inline. Keep camera, crop and pose fixed across geometry edits.
 Only a supplied white-foreground, black-background `maskPath` enables silhouette
 IoU and missing/excess coverage; ordinary photos receive visual overlays without
 numeric similarity. This complements final multiview and material inspection.
+
+If orientation is already plausible but framing differs, use
+`blender_fit_reference_camera` with 3–32 spatially separated known landmarks,
+`referenceWidth`/`referenceHeight`, and a new `outputDir`. Each landmark has
+`name`, `objectName`, `localPoint` (XYZ), and `referenceUv` (XY normalized from
+the image top-left). It fits scale/focal length and lens shift in a candidate
+.blend without changing pose or meshes. Review that candidate using
+`blender_compare_reference`; copy accepted parameters into durable source,
+then freeze the camera for geometry comparisons. Lower landmark error measures
+framing fit, not improved geometry. Large residuals may mean incorrect pose or
+correspondences; do not distort the mesh simply to reduce them.
 
 During a targeted repair, use `views: ["perspective", "front"]` (or two useful
 fixed angles) and `resolution: 256` for quick feedback. The CLI accepts

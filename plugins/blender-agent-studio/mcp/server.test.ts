@@ -32,7 +32,9 @@ describe("Blender Agent Studio MCP", () => {
       expect(listed.tools.map((tool) => tool.name).sort()).toEqual([
         "blender_compare_reference",
         "blender_describe_scene",
+        "blender_diagnose_topology",
         "blender_download_polyhaven_asset",
+        "blender_fit_reference_camera",
         "blender_inspect_asset",
         "blender_quality_report",
         "blender_render_evidence",
