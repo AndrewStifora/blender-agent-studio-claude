@@ -47,6 +47,7 @@ describe("Blender Agent Studio MCP", () => {
       const qualitySchema = listed.tools.find(tool => tool.name === 'blender_quality_report')!.inputSchema;
       expect((qualitySchema.properties?.contactPairs as any).items.items).toEqual({type: 'string'});
       expect((qualitySchema.properties?.contactPairs as any).items.minItems).toBe(2);
+      expect((qualitySchema.properties?.connectionPoints as any).items.properties.pointA.items.type).toBe("number");
       expect(renderSchema.properties?.presentation).toMatchObject({
         enum: ["auto", "neutral", "dark", "light"], default: "auto",
       });

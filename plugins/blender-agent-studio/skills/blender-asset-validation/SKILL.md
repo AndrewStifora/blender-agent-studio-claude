@@ -71,6 +71,23 @@ intermediate connector, check each actual connection rather than requiring the
 two remote endpoints to touch. Review the joint in multiple views, repair the
 durable source, and rerun the same declared pairs before retaining the repair.
 
+## Check specific connection points
+
+For cable terminals, hinge pivots or pipe ends, `contactPairs` can miss a wrong
+endpoint when whole-object boxes overlap. Add `connectionPoints` to
+`blender_quality_report` using a stable name, exact `objectA`/`objectB`,
+object-local `pointA`/`pointB` XYZ, and `maxDistance` in world units. Empties
+placed from the same source parameters as the real endpoints work as anchors.
+Both objects must belong to the selected assembly; pagination does not hide checks.
+
+`connection_checks` returns world positions, distance, and
+`delta_world_b_minus_a`. A `connection_point_gap` identifies a misplaced declared
+anchor even with overlapping boxes. Apply the correction to durable geometry
+source; when editing local coordinates, transform the world delta into that
+object's local space. Keep anchors derived from the geometry and verify the
+rendered joint; moving markers alone is not a repair. `within_tolerance` proves
+only anchor agreement, not mesh contact, watertightness or mechanical validity.
+
 ## Render evidence
 
 For reference-driven proportion checks, use `blender_compare_reference` with

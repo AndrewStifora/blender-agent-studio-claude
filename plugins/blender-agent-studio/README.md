@@ -93,6 +93,14 @@ manifest reports actual settings and decisions; authored compositor denoising
 is preserved. Choose off for clean images and inspect detail before retaining
 filtering. Sample caps do not increase automatically.
 
+## Connection-point diagnostics
+
+SceneIR quality reports accept explicit `connectionPoints` for cable ends,
+pivots and other intended joints. Checks transform object-local anchors into
+world space and return the gap plus correction direction, even when object
+bounding boxes overlap. They preserve whole-assembly selection and pagination.
+Anchor agreement requires visual verification and does not prove surface contact.
+
 ## Reference framing and repair diagnostics
 
 `blender_fit_reference_camera` fits scale/focal length and lens shift from

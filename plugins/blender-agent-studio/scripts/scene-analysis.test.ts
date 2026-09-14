@@ -52,6 +52,12 @@ test.skipIf(!runtimeAvailable || !blender)("live Blender scene and fresh GLB imp
     const contact = await client.callTool({name:"blender_quality_report",arguments:{assetPath,blenderPath:blender,contactPairs:[["body","foot"]],limit:1}});
     expect(contact.isError,JSON.stringify(contact.content)).not.toBe(true);
     expect((contact.structuredContent as any).contact_checks[0]).toMatchObject({status:"gap_detected",aabb_distance_lower_bound:1.5});
+    const anchored = await client.callTool({name:"blender_quality_report",arguments:{assetPath,blenderPath:blender,limit:1,connectionPoints:[{name:"body-to-foot",objectA:"body",pointA:[0,0,0],objectB:"foot",pointB:[0,0,0],maxDistance:0.01}]}});
+    expect(anchored.isError,JSON.stringify(anchored.content)).not.toBe(true);
+    const check=(anchored.structuredContent as any).connection_checks[0];
+    expect(check.status).toBe("gap_detected");
+    expect(check.distance).toBeGreaterThan(0.01);
+    expect(check.delta_world_b_minus_a).toHaveLength(3);
     const imported = await client.callTool({name:"blender_describe_scene",arguments:{assetPath:join(temporary,"fixture.glb"),blenderPath:blender}});
     expect(imported.isError, JSON.stringify(imported.content)).not.toBe(true);
     expect((imported.structuredContent as any).selection.triangles).toBe(36);
