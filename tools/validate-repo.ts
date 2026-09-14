@@ -54,7 +54,7 @@ for (const skillEntry of readdirSync(join(pluginRoot, "skills"), {
   if (!existsSync(skillPath)) {
     throw new Error(`Missing SKILL.md for ${skillEntry.name}`);
   }
-  const text = readFileSync(skillPath, "utf8");
+  const text = new TextDecoder("utf-8", {fatal: true}).decode(readFileSync(skillPath));
   const bundledGuidance = join(pluginRoot, "skills", skillEntry.name, "references/astra-workflow.md");
   if (!existsSync(bundledGuidance) || readFileSync(bundledGuidance, "utf8") !== sharedGuidance) {
     throw new Error(`Missing or stale guidance for ${skillEntry.name}; run bun tools/sync-guidance.ts`);

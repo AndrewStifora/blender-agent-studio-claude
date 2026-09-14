@@ -81,7 +81,7 @@ IoU and missing/excess coverage; ordinary photos receive visual overlays without
 numeric similarity. This complements final multiview and material inspection.
 
 If orientation is already plausible but framing differs, use
-`blender_fit_reference_camera` with 3–32 spatially separated known landmarks,
+`blender_fit_reference_camera` with 3-32 spatially separated known landmarks,
 `referenceWidth`/`referenceHeight`, and a new `outputDir`. Each landmark has
 `name`, `objectName`, `localPoint` (XYZ), and `referenceUv` (XY normalized from
 the image top-left). It fits scale/focal length and lens shift in a candidate
