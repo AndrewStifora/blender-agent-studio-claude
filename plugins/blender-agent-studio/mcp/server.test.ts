@@ -30,6 +30,7 @@ describe("Blender Agent Studio MCP", () => {
 
       const listed = await client.listTools();
       expect(listed.tools.map((tool) => tool.name).sort()).toEqual([
+        "blender_compare_reference",
         "blender_describe_scene",
         "blender_download_polyhaven_asset",
         "blender_inspect_asset",

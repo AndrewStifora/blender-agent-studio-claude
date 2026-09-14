@@ -44,6 +44,40 @@ function errorResult(error: unknown) {
 }
 
 server.registerTool(
+  "blender_compare_reference",
+  {
+    title: "Compare model projection with a reference image",
+    description: "Render geometry through an authored reference camera and return a reference/silhouette/overlay image. Optional explicit white-foreground mask enables missing/excess coverage and IoU. Does not infer camera, foreground or 3D quality. Match pose/crop first; read-only source, new output directory.",
+    inputSchema: z.object({
+      assetPath: z.string().describe(".blend with a camera matching the reference view"),
+      referencePath: z.string(),
+      outputDir: z.string(),
+      maskPath: z.string().optional().describe("Optional white foreground / black background silhouette mask with exactly the reference image dimensions. Do not supply a photograph as a mask."),
+      cameraName: z.string().optional().describe("Exact camera name; defaults to the active authored camera"),
+      maxEdge: z.number().int().min(128).max(1024).default(512),
+      blenderPath: z.string().optional(),
+      timeoutMs: z.number().int().min(1000).max(300000).default(60000),
+    }),
+  },
+  async ({assetPath, referencePath, outputDir, maskPath, cameraName, maxEdge, blenderPath, timeoutMs}) => {
+    try {
+      const output = resolve(outputDir);
+      const args = ["--input", resolve(assetPath), "--reference", resolve(referencePath),
+        "--output-dir", output, "--max-edge", String(maxEdge)];
+      if (maskPath) args.push("--mask", resolve(maskPath));
+      if (cameraName) args.push("--camera", cameraName);
+      const process = await runBlender({blenderPath,
+        scriptPath: join(validationScripts, "compare_reference.py"), scriptArgs: args, timeoutMs});
+      if (process.exitCode !== 0 || process.timedOut) return {...result({process, report: null}), isError: true};
+      const report = await readJsonFile(join(output, "comparison.json"));
+      const response = result({process, report});
+      return {...response, content: [...response.content,
+        {type: "image" as const, mimeType: "image/png", data: (await readFile(join(output, "comparison.png"))).toString("base64")}]};
+    } catch (error) { return errorResult(error); }
+  },
+);
+
+server.registerTool(
   "blender_version",
   {
     title: "Blender version",

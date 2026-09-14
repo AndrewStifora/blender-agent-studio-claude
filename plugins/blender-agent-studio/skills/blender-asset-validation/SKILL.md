@@ -67,6 +67,13 @@ durable source, and rerun the same declared pairs before retaining the repair.
 
 ## Render evidence
 
+For reference-driven proportion checks, use `blender_compare_reference` with
+an authored camera matching the reference. It returns a reference/silhouette/
+overlay board inline. Keep camera, crop and pose fixed across geometry edits.
+Only a supplied white-foreground, black-background `maskPath` enables silhouette
+IoU and missing/excess coverage; ordinary photos receive visual overlays without
+numeric similarity. This complements final multiview and material inspection.
+
 During a targeted repair, use `views: ["perspective", "front"]` (or two useful
 fixed angles) and `resolution: 256` for quick feedback. The CLI accepts
 `--views perspective,front`. The manifest labels this `partial_preview`;

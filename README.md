@@ -12,6 +12,7 @@ render them, and find textures.
 
 - Build props, environments, characters, and Geometry Nodes setups.
 - Gather references from several angles and compare the model's proportions before adding detail.
+- Overlay projected geometry on a reference image, with optional silhouette-mask measurements for missing and excess coverage. See [reference modeling](docs/reference-modeling.md).
 - Rig and animate models, or work with cloth, smoke, and other simulations.
 - Render through your scene's cameras with its lighting intact, or use studio views to inspect a model from every side.
 - Download CC0 textures and HDRIs from Poly Haven at 1K, 2K, 4K, or 8K.

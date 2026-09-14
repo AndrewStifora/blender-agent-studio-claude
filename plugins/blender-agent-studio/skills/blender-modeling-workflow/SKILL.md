@@ -41,6 +41,21 @@ the graybox. Write down the proportions and relationships the references imply,
 then compare matching graybox views against them. A folder of images without
 observations or a comparison pass does not complete the reference stage.
 
+For supplied images, create a named reference camera in the bpy source. Match
+the image's projection, framing and pose before altering proportions. Use
+`blender_compare_reference` at `maxEdge: 256` or 512 to see the reference,
+projected model silhouette and overlay together. Fix the largest primary-form
+or negative-space mismatch first, then regenerate into a new comparison output.
+Keep camera and crop fixed while judging a geometry edit. Use complementary
+angles to resolve depth rather than flattening a model to win one projection.
+
+Supply `maskPath` only when a reviewed white-on-black subject silhouette exists
+at the exact reference dimensions. Pink marks missing geometry coverage; cyan
+marks excess. Without a mask, use the overlay visually and do not invent a
+similarity score. Transparent surfaces are opaque in this geometry pass; inspect
+materials separately. Exclude unrelated staging geometry from the reference
+scene. A high silhouette IoU does not establish 3D shape or finish quality.
+
 Treat “game-ready,” “stylized,” and “optimized” as quality constraints, not as
 synonyms for visibly low-poly.
 

@@ -21,6 +21,12 @@ Read [references/mcp-options.md](references/mcp-options.md) before installing or
 
 ## Optional scene analysis runtime
 
+Use `blender_compare_reference` for a camera-matched reference/silhouette/overlay
+board. It works directly through Blender without Rust and returns the image
+inline. A reviewed white-on-black mask optionally enables projection metrics;
+photos alone produce visual comparison, not guessed similarity scores. Author
+the reference camera with bpy or the live MCP before comparing geometry.
+
 `blender_describe_scene` and `blender_quality_report` use the bundled Rust
 SceneIR analyzer. Run `bun run setup:runtime` in the installed plugin root with
 a stable Rust toolchain, or set `BAS_RUNTIME_EXECUTABLE` to a compatible built
