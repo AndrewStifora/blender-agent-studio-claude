@@ -41,6 +41,12 @@
 - Give transparent glazing restrained tint and emission so interior forms stay
   readable. Preserve pane thickness, captured edges and bevels; reducing opacity
   alone does not create convincing glass. Verify the exported material too.
+- Choose a coherent glass model. For stylized low-sample EEVEE panes, try
+  restrained alpha tint with `surface_render_method = 'BLENDED'` (when supported),
+  Principled transmission weight 0 and emission strength 0. This avoids stacking
+  alpha transparency with noisy transmission. For physically refractive glass,
+  use the renderer's supported transmission workflow and appropriate sampling
+  instead; do not silently replace requested realism with alpha blending.
 
 ## Animation
 
