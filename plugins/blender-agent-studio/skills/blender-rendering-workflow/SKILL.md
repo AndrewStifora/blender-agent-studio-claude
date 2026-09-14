@@ -28,6 +28,9 @@ settings are unknown. Then select existing `cameras` by exact name and optional
 active camera/frame, caps the longest edge at 1280 and Cycles samples at 64, and
 automatically selects an available GPU with an explicit recorded CPU fallback.
 Choose `device: "cpu"` or a specific backend when reproducibility requires it.
+MCP Apps-compatible hosts show a compact image viewer with view selection,
+fit/100% zoom, and expandable details. Other hosts retain the inline image and
+structured result. The viewer shows completed renders, not live progress.
 Use a fresh output directory for each run. Inspect the inline PNG and
 `render-manifest.json`; errors are not successful evidence.
 

@@ -68,6 +68,22 @@ Measure skill changes on one fixed model before comparing different models.
 - A local MCP with exact Blender version, asset inspection, and evidence render
   tools. It deliberately does not expose generic arbitrary Python execution.
 
+## Inline render viewer
+
+MCP Apps-compatible hosts can show a compact viewer for `blender_render_scene`,
+`blender_render_evidence`, and `blender_compare_reference`: switch views,
+inspect at 100% or fit, and expand render details. It follows the host theme and
+fits narrow chat panels. No render controls or extra agent tools are required.
+
+The UI is a self-contained `ui://` resource with bundled JavaScript and no remote
+assets or network permissions. Up to 12 PNGs and 10 MB of image bytes are passed
+in UI-only metadata, scoped to the completed output directory. Unavailable or
+oversized images are noted. Agents keep structured results and the first inline
+image; hosts without MCP Apps support keep that fallback. Preflight and errors
+have explicit states. This is a viewer for completed results, not live render
+progress or automatic refresh of files. The server bundles UI code on first
+resource read using its existing Bun runtime.
+
 ## Denoising by render stage
 
 `blender_render_scene` accepts `denoise: "preview"`, `"final"`, `"off"`, or

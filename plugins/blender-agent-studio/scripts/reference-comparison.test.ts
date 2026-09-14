@@ -82,6 +82,7 @@ test.skipIf(!blender)("MCP reference comparison renders the authored camera, sco
     const matchingDir = join(temporary, "matching-output");
     const matching = await compare(matchingAsset, matchingDir);
     expect(matching.isError, JSON.stringify(matching.content)).not.toBe(true);
+    expect((matching._meta as any)?.["blender/viewer"].images.length).toBe(2);
     const matchingResult = matching.structuredContent as any;
     expect(matchingResult.report.scope).toBe("projected_geometry_reference_comparison");
     expect(matchingResult.report.source).toBe(resolve(matchingAsset));

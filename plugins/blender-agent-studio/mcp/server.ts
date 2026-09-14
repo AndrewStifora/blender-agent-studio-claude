@@ -1,3 +1,4 @@
+import {registerViewer, viewerToolMeta, makeGallery, galleryMeta} from "./viewer.ts";
 import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -27,6 +28,8 @@ const server = new McpServer({
   name: "blender-agent-studio",
   version: JSON.parse(await readFile(join(pluginRoot, ".codex-plugin/plugin.json"), "utf8")).version,
 });
+
+registerViewer(server);
 
 function result(output: unknown) {
   return {
@@ -99,6 +102,7 @@ server.registerTool(
 server.registerTool(
   "blender_compare_reference",
   {
+    _meta: viewerToolMeta,
     title: "Compare model projection with a reference image",
     description: "Render geometry through an authored reference camera and return a reference/silhouette/overlay image. Optional explicit white-foreground mask enables missing/excess coverage and IoU. Does not infer camera, foreground or 3D quality. Match pose/crop first; read-only source, new output directory.",
     inputSchema: z.object({
@@ -130,7 +134,8 @@ server.registerTool(
       if (process.exitCode !== 0 || process.timedOut) return {...result({process, report: null}), isError: true};
       const report = await readJsonFile(join(output, "comparison.json"));
       const response = result({process, report});
-      return {...response, content: [...response.content,
+      const gallery = await makeGallery("Reference comparison", output, [{path: join(output, "comparison.png"), label: "Reference / model / overlay"}, {path: join(output, "overlay.png"), label: "Overlay"}], [["Purpose", "Projected geometry comparison"], ["Similarity", maskPath ? "See mask metrics in tool result" : "Visual comparison; no mask score"]]);
+      return {...response, _meta: galleryMeta(gallery), content: [...response.content,
         {type: "image" as const, mimeType: "image/png", data: (await readFile(join(output, "comparison.png"))).toString("base64")}]};
     } catch (error) { return errorResult(error); }
   },
@@ -209,6 +214,7 @@ server.registerTool(
 server.registerTool(
   "blender_render_evidence",
   {
+    _meta: viewerToolMeta,
     title: "Render Blender evidence",
     description:
       "Render standardized multiview evidence and a contact sheet for a Blender asset using fixed cameras and lighting.",
@@ -261,13 +267,19 @@ server.registerTool(
         scriptArgs: args,
         timeoutMs,
       });
-      return { ...result({
-        process,
-        outputDir: resolvedOutput,
-        manifest: process.exitCode === 0 && !process.timedOut && existsSync(join(resolvedOutput, "evidence.json"))
-          ? await readJsonFile(join(resolvedOutput, "evidence.json"))
-          : null,
-      }), isError: process.exitCode !== 0 || process.timedOut };
+      const manifest = process.exitCode === 0 && !process.timedOut && existsSync(join(resolvedOutput, "evidence.json"))
+        ? await readJsonFile(join(resolvedOutput, "evidence.json")) as Record<string, any> : null;
+      const response = result({process, outputDir: resolvedOutput, manifest});
+      if (!manifest) return {...response, isError: true};
+      const candidates = [
+        ...(manifest.contact_sheet ? [{path: manifest.contact_sheet, label: "All views"}] : []),
+        ...(manifest.views ?? []).map((path:string, i:number)=>({path, label: manifest.requested_views?.[i] ?? `View ${i+1}`})),
+      ];
+      const gallery = await makeGallery("Model views", resolvedOutput, candidates,
+        [["Scope", manifest.evidence_scope ?? "Evidence"], ["Lighting", manifest.requested_presentation ?? "Studio"]]);
+      const content: Array<any> = [...response.content];
+      if (gallery.images[0]) content.push({type: "image", mimeType: "image/png", data: gallery.images[0].src.split(",")[1]});
+      return {...response, content, _meta: galleryMeta(gallery)};
     } catch (error) {
       return errorResult(error);
     }
@@ -277,6 +289,7 @@ server.registerTool(
 server.registerTool(
   "blender_render_scene",
   {
+    _meta: viewerToolMeta,
     title: "Render authored Blender scene",
     description: "Preflight or render a .blend using its authored cameras, lights, world, volumes and color management. Use for interiors, cinematic lighting and final beauty images; use render_evidence for standardized geometry views. Never saves the source. Output directory must be new or empty. Returns first rendered PNG inline.",
     inputSchema: z.object({
@@ -319,7 +332,14 @@ server.registerTool(
         if (png.length <= 10_000_000) content.push({type: "image", mimeType: "image/png", data: png.toString("base64")});
         else content.push({type: "text", text: `PNG exceeds the 10 MB inline limit; open the rendered image at ${manifest.renders[0].path}`});
       }
-      return {...response, content, isError: process.exitCode !== 0 || process.timedOut};
+      const gallery = manifest ? await makeGallery(inspectOnly ? "Scene details" : "Scene render", resolvedOutput,
+        (manifest.renders ?? []).map((r:any)=>({path:r.path,label:`${r.camera} · Frame ${r.frame}`})),
+        [["Engine", manifest.preflight?.engine ?? "Unknown"],
+         ["Size", manifest.effective?.resolution?.join(" × ") ?? manifest.preflight?.resolution?.slice(0,2).join(" × ") ?? "Unknown"],
+         ["Samples", String(manifest.effective?.samples ?? "Authored")],
+         ["Denoising", manifest.denoise?.effectivePolicy ?? "Authored"],
+         ["Device", manifest.device?.effective ?? "Not selected"]], inspectOnly ? "Preflight" : "Ready") : null;
+      return {...response, content, ...(gallery ? {_meta: galleryMeta(gallery)} : {}), isError: process.exitCode !== 0 || process.timedOut};
     } catch (error) { return errorResult(error); }
   },
 );
