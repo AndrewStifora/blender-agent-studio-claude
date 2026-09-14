@@ -41,6 +41,10 @@ describe("Blender Agent Studio MCP", () => {
         "blender_version",
       ]);
       const renderSchema = listed.tools.find((tool) => tool.name === "blender_render_evidence")!.inputSchema;
+      // Codex's tool schema parser requires homogeneous array items, not tuple-schema arrays.
+      const qualitySchema = listed.tools.find(tool => tool.name === 'blender_quality_report')!.inputSchema;
+      expect((qualitySchema.properties?.contactPairs as any).items.items).toEqual({type: 'string'});
+      expect((qualitySchema.properties?.contactPairs as any).items.minItems).toBe(2);
       expect(renderSchema.properties?.presentation).toMatchObject({
         enum: ["auto", "neutral", "dark", "light"], default: "auto",
       });

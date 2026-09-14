@@ -12,6 +12,9 @@ import sys
 
 import bpy
 import numpy as np
+from bpy_extras.object_utils import world_to_camera_view
+from mathutils import Vector
+import math
 
 
 def load_pixels(path: Path, size=None):
@@ -59,6 +62,7 @@ def main():
     parser.add_argument('--mask')
     parser.add_argument('--camera')
     parser.add_argument('--max-edge', type=int, default=512)
+    parser.add_argument('--landmarks-json', default='[]')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     source, reference = Path(args.input).resolve(), Path(args.reference).resolve()
     output = Path(args.output_dir).resolve()
@@ -75,6 +79,9 @@ def main():
     if camera is None or camera.type != 'CAMERA':
         raise ValueError('Set an authored reference camera or supply its exact camera name')
     scene.camera = camera
+    landmarks = json.loads(args.landmarks_json)
+    if not isinstance(landmarks, list) or len(landmarks) > 32:
+        raise ValueError('At most 32 landmarks are supported')
     ref, original_size = load_pixels(reference)
     scale = min(1.0, args.max_edge / max(original_size))
     size = tuple(max(1, round(d * scale)) for d in original_size)
@@ -150,6 +157,35 @@ def main():
             })
     else:
         overlay[actual, :3] = 0.55 * ref[actual, :3] + 0.45 * np.array((0, 0.7, 1))
+    landmark_results = []
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    for item in landmarks:
+        uv, local = item['referenceUv'], item.get('localPoint', [0, 0, 0])
+        if (len(uv) != 2 or len(local) != 3 or
+                not all(isinstance(v, (int, float)) and math.isfinite(v) for v in [*uv, *local]) or
+                not all(0 <= v <= 1 for v in uv)):
+            raise ValueError('Landmarks require finite localPoint XYZ and referenceUv XY in [0,1] from image top-left')
+        obj = scene.objects.get(item['objectName'])
+        if obj is None:
+            raise ValueError(f"Unknown landmark object: {item['objectName']}")
+        point = obj.evaluated_get(depsgraph).matrix_world @ Vector(local)
+        projected = world_to_camera_view(scene, camera.evaluated_get(depsgraph), point)
+        model_uv = [float(projected.x), float(1 - projected.y)]
+        in_front = projected.z > 0
+        in_frame = in_front and all(0 <= value <= 1 for value in model_uv)
+        delta = [(model_uv[0] - uv[0]) * width, (model_uv[1] - uv[1]) * height] if in_front else None
+        landmark_results.append({'name': item['name'], 'object': obj.name,
+            'reference_uv': uv, 'model_uv': model_uv if in_front else None,
+            'delta_pixels': delta, 'error_pixels': math.hypot(*delta) if delta else None,
+            'in_front_of_camera': in_front, 'in_frame': in_frame,
+            'visibility': 'not_tested_for_occlusion'})
+        for coordinate, color in ((uv, (1, 0.85, 0)), (model_uv if in_frame else None, (0.2, 0.2, 1))):
+            if coordinate is None:
+                continue
+            x = min(width - 1, round(coordinate[0] * width))
+            y = min(height - 1, round((1 - coordinate[1]) * height))
+            overlay[max(0,y-2):min(height,y+3), x, :3] = color
+            overlay[y, max(0,x-2):min(width,x+3), :3] = color
     save_pixels(output / 'reference.png', ref)
     save_pixels(output / 'silhouette.png', silhouette)
     save_pixels(output / 'overlay.png', overlay)
@@ -168,8 +204,10 @@ def main():
                    'sensor_width': camera.data.sensor_width, 'sensor_height': camera.data.sensor_height,
                    'matrix_world': [list(row) for row in camera.matrix_world]},
         'metrics': metrics,
+        'landmarks': landmark_results,
         'model_touches_image_border': bool(actual[0].any() or actual[-1].any() or actual[:, 0].any() or actual[:, -1].any()),
         'legend': {'panel_order': ['reference', 'projected_geometry', 'overlay'],
+                   'yellow_cross': 'reference landmark', 'blue_cross': 'projected model landmark',
                    'green': 'overlap', 'pink': 'missing model coverage', 'cyan': 'excess model coverage' if expected is not None else 'model coverage; no reference mask'},
         'limitations': ['Camera, crop and pose must match before interpreting geometry differences.',
                        'No camera estimation, segmentation, image registration or automatic geometry repair is performed.',

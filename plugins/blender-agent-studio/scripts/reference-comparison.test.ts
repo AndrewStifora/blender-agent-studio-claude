@@ -74,7 +74,9 @@ test.skipIf(!blender)("MCP reference comparison renders the authored camera, sco
     await client.connect(new StdioClientTransport({ command: "bun", args: [join(root, "mcp/server.ts")], cwd: root, stderr: "pipe" }));
     const compare = async (assetPath: string, outputDir: string, mask = true) =>
       await client.callTool({ name: "blender_compare_reference", arguments: {
-        assetPath, referencePath, ...(mask ? { maskPath } : {}), outputDir, blenderPath: blender, maxEdge: 128, timeoutMs: 10_000,
+        assetPath, referencePath, ...(mask ? { maskPath } : {landmarks: [
+          {name: "center", objectName: "ReferenceCube", referenceUv: [0.25, 0.5]},
+        ]}), outputDir, blenderPath: blender, maxEdge: 128, timeoutMs: 10_000,
       } });
 
     const matchingDir = join(temporary, "matching-output");
@@ -106,6 +108,10 @@ test.skipIf(!blender)("MCP reference comparison renders the authored camera, sco
     expect(noMask.isError, JSON.stringify(noMask.content)).not.toBe(true);
     const noMaskReport = JSON.parse(await readFile(join(temporary, "no-mask-output", "comparison.json"), "utf8"));
     expect(noMaskReport.metrics).toBeNull();
+    expect(noMaskReport.landmarks[0].delta_pixels[0]).toBeCloseTo(16, 3);
+    expect(noMaskReport.landmarks[0].delta_pixels[1]).toBeCloseTo(0, 3);
+    expect(noMaskReport.landmarks[0].error_pixels).toBeCloseTo(16, 3);
+    expect(noMaskReport.landmarks[0].visibility).toBe('not_tested_for_occlusion');
 
     const occupied = await compare(matchingAsset, matchingDir);
     expect(occupied.isError).toBe(true);

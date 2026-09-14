@@ -56,6 +56,14 @@ similarity score. Transparent surfaces are opaque in this geometry pass; inspect
 materials separately. Exclude unrelated staging geometry from the reference
 scene. A high silhouette IoU does not establish 3D shape or finish quality.
 
+For identifiable reference features, supply up to 32 `landmarks` to the same
+tool: a name, exact `objectName`, `referenceUv` normalized from image top-left,
+and optional object-local `localPoint`. Use authored empties for stable feature
+anchors. Yellow/blue markers and signed pixel offsets provide precise feedback
+for Astra's visual diagnosis even without a mask. Check the camera first when
+many landmarks shift together; change local geometry when only a feature is
+wrong. In-frame projection does not prove that a point is visible.
+
 Treat “game-ready,” “stylized,” and “optimized” as quality constraints, not as
 synonyms for visibly low-poly.
 

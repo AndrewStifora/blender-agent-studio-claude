@@ -54,18 +54,24 @@ server.registerTool(
       outputDir: z.string(),
       maskPath: z.string().optional().describe("Optional white foreground / black background silhouette mask with exactly the reference image dimensions. Do not supply a photograph as a mask."),
       cameraName: z.string().optional().describe("Exact camera name; defaults to the active authored camera"),
+      landmarks: z.array(z.object({
+        name: z.string(), objectName: z.string(),
+        referenceUv: z.array(z.number().min(0).max(1)).length(2),
+        localPoint: z.array(z.number()).length(3).default([0, 0, 0]),
+      })).max(32).default([]).describe("Known reference features: normalized XY from image top-left and corresponding object-local XYZ (default origin). Reports projected pixel error; no camera fitting or occlusion inference."),
       maxEdge: z.number().int().min(128).max(1024).default(512),
       blenderPath: z.string().optional(),
       timeoutMs: z.number().int().min(1000).max(300000).default(60000),
     }),
   },
-  async ({assetPath, referencePath, outputDir, maskPath, cameraName, maxEdge, blenderPath, timeoutMs}) => {
+  async ({assetPath, referencePath, outputDir, maskPath, cameraName, landmarks, maxEdge, blenderPath, timeoutMs}) => {
     try {
       const output = resolve(outputDir);
       const args = ["--input", resolve(assetPath), "--reference", resolve(referencePath),
         "--output-dir", output, "--max-edge", String(maxEdge)];
       if (maskPath) args.push("--mask", resolve(maskPath));
       if (cameraName) args.push("--camera", cameraName);
+      if (landmarks.length) args.push("--landmarks-json", JSON.stringify(landmarks));
       const process = await runBlender({blenderPath,
         scriptPath: join(validationScripts, "compare_reference.py"), scriptArgs: args, timeoutMs});
       if (process.exitCode !== 0 || process.timedOut) return {...result({process, report: null}), isError: true};
@@ -294,7 +300,7 @@ const sceneSchema = z.object({
   proximity: z.number().min(0).max(1e9).default(0.01).describe("World-unit AABB proximity threshold; not surface distance."),
   groundZ: z.number().min(-1e12).max(1e12).optional(),
   groundObjects: z.array(z.string()).max(200).default([]).describe("Only explicitly named objects are checked against groundZ."),
-  contactPairs: z.array(z.tuple([z.string(), z.string()])).max(200).default([]).describe("Exact mesh-object pairs intended to touch according to the brief. Detects definite AABB gaps; overlapping bounds do not prove surface contact. Covers full selection."),
+  contactPairs: z.array(z.array(z.string()).length(2)).max(200).default([]).describe("Exact mesh-object pairs intended to touch according to the brief. Detects definite AABB gaps; overlapping bounds do not prove surface contact. Covers full selection."),
   tolerance: z.number().min(0).max(1e9).default(0.001),
   triangleBudget: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   requireClosedMesh: z.boolean().default(false),

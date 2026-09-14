@@ -62,3 +62,27 @@ or mask make scores incomparable. One matching projection can still hide a bad
 
 This tool complements bpy and MCP; it does not reconstruct a mesh, estimate a
 camera, segment a photo, infer hidden geometry or apply repairs automatically.
+
+## Landmark feedback without a mask
+
+For a visible feature such as a hinge center, tip, eye or corner, supply a named
+correspondence between the reference and the model. `referenceUv` is normalized
+XY from the image's top-left; `localPoint` is object-local XYZ and defaults to
+the object's origin. An empty placed at a feature is a useful stable anchor.
+
+```json
+{
+  "landmarks": [
+    {"name": "hinge", "objectName": "HingeAnchor", "referenceUv": [0.32, 0.45]},
+    {"name": "tip", "objectName": "Handle", "localPoint": [0, 0, 1], "referenceUv": [0.6, 0.2]}
+  ]
+}
+```
+
+The overlay marks reference points yellow and model points blue. The report
+returns signed pixel offsets (positive right/down), error distance, and whether
+the point is in front of the camera and inside its frame. Behind-camera points
+have no pixel error. Projection is not an occlusion test: a hidden point can
+still project inside the image. Up to 32 landmarks are supported, with or without
+a silhouette mask. Use only correspondences you can identify; the tool neither
+detects landmarks nor fits the camera automatically.
