@@ -5,6 +5,17 @@ import {join} from 'node:path';
 import {makeGallery,viewerHtml,VIEWER_URI} from './viewer';
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
+import {galleryFromResult} from './ui/result';
+
+test('viewer displays standard image content when host omits custom metadata',()=>{
+ const content=[{type:'text',text:'render complete'},{type:'image',mimeType:'image/png',data:'iVBORw0KGgo='}];
+ expect(galleryFromResult({content})?.images[0].src).toBe('data:image/png;base64,iVBORw0KGgo=');
+ expect(galleryFromResult({_meta:{'blender/viewer':{}},content})?.images).toHaveLength(1);
+ const gallery={title:'Comparison',status:'Ready',images:[],details:[],notice:''};
+ expect(galleryFromResult({_meta:{'blender/viewer':gallery},content})).toBe(gallery);
+ expect(galleryFromResult({content:[{type:'image',mimeType:'image/svg+xml',data:'javascript:alert(1)'}]})).toBeUndefined();
+ expect(galleryFromResult({content:[]})).toBeUndefined();
+});
 test('viewer resource is discoverable and render tools reference it',async()=>{
  const client=new Client({name:'ui-test',version:'1'});
  try {

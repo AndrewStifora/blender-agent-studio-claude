@@ -1,5 +1,6 @@
 import {App,applyDocumentTheme,applyHostStyleVariables} from '@modelcontextprotocol/ext-apps';
 import type {Gallery} from '../viewer';
+import {galleryFromResult} from './result';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const img=el<HTMLImageElement>('image'),views=el<HTMLSelectElement>('views'),zoom=el<HTMLButtonElement>('zoom');
 let gallery:Gallery|undefined;
@@ -28,7 +29,7 @@ views.onchange=select;zoom.onclick=()=>{const active=el('stage').classList.toggl
 img.onerror=()=>empty('This image could not be displayed. The rendered file remains in the output directory.','Image unavailable');
 const app=new App({name:'Blender render viewer',version:'1.0.0'},{});
 app.ontoolinput=()=>empty('Rendering. Your preview will appear when it is ready.','Working…');
-app.ontoolresult=(result)=>{if(result.isError){empty('The render did not complete. Check the tool response for details.','Render failed');return;}render(result._meta?.['blender/viewer']);};
+app.ontoolresult=(result)=>{if(result.isError){empty('The render did not complete. Check the tool response for details.','Render failed');return;}render(galleryFromResult(result));};
 app.ontoolcancelled=()=>empty('Rendering was cancelled.','Cancelled');
 app.onhostcontextchanged=ctx=>{if(ctx.theme)applyDocumentTheme(ctx.theme);if(ctx.styles?.variables)applyHostStyleVariables(ctx.styles.variables);};
 app.connect().then(()=>{const ctx=app.getHostContext();if(ctx?.theme)applyDocumentTheme(ctx.theme);if(ctx?.styles?.variables)applyHostStyleVariables(ctx.styles.variables);}).catch(()=>empty('Open this viewer in an MCP Apps-compatible host. Inline image results remain available.','Connection unavailable'));
