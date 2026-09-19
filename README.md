@@ -81,6 +81,16 @@ In the 0.6 Astra tests, the revised workflow won the lantern comparison and lost
 the workshop comparisons. See the [results and limits](plugins/blender-agent-studio/skills/blender-agent-benchmark/references/astra-0.6-validation.md)
 and [benchmark methodology](plugins/blender-agent-studio/skills/blender-agent-benchmark/references/methodology.md).
 
+## Star history
+
+<a href="https://www.star-history.com/?repos=ifBars%2Fblender-agent-studio&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=ifBars/blender-agent-studio&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=ifBars/blender-agent-studio&type=date&legend=top-left" />
+    <img alt="Blender Agent Studio star history chart" src="https://api.star-history.com/chart?repos=ifBars/blender-agent-studio&type=date&legend=top-left" />
+  </picture>
+</a>
+
 ## Contributing
 
 Found a bug? [Open an issue](https://github.com/ifBars/blender-agent-studio/issues)
