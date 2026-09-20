@@ -29,6 +29,9 @@ See [INSTALL.md](INSTALL.md) for both install routes.
   against 4.x-era documentation; three of the five **fail silently**.
 - **[../plugins/blender-agent-studio/skills/blender-agent-benchmark-claude/PORT-NOTES.md](../plugins/blender-agent-studio/skills/blender-agent-benchmark-claude/PORT-NOTES.md)**
   — the full Codex → Claude flag and event-schema mapping.
+- **[LICENSE-NOTE.md](LICENSE-NOTE.md)** — who owns what. The skills are Bars'
+  under MIT; this fork's additions carry the same terms and the upstream
+  copyright line is unchanged.
 
 ## Testing summary
 
@@ -100,5 +103,8 @@ on looking at the result and tells you where to look.
 ## Credit
 
 Skills, MCP server, scoring harness and references: **Bars**
-([@ifBars](https://github.com/ifBars)) — MIT. See `LICENSE` and
-`THIRD_PARTY_NOTICES.md` at the repository root.
+([@ifBars](https://github.com/ifBars)) — MIT. The root `LICENSE` is upstream's,
+unmodified, and everything this fork adds carries the same terms.
+
+[LICENSE-NOTE.md](LICENSE-NOTE.md) sets out the split in full, alongside
+`LICENSE` and `THIRD_PARTY_NOTICES.md` at the repository root.
