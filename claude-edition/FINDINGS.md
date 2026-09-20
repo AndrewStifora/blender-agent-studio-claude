@@ -29,6 +29,8 @@ seams where a real bracket is one folded piece.
 
 ## 04 · Simulation (smoke)
 
+> **See also §12:** a later inspector run found 7 faces with no material on the two invisible sim helpers. Benign, but this scene had never been inspected.
+
 | Defect | Cause | Caught by | Outcome |
 | --- | --- | --- | --- |
 | Plume flattened into a hard-edged mushroom cap | Domain only 1.85 m tall; plume hit the ceiling by frame 40 | **render** | Fixed — domain raised to 2.6 m, rebaked to a *new* cache directory |
@@ -43,6 +45,8 @@ The manifest prints `seed: … via 'None'` rather than claiming a seed was set.
 ---
 
 ## 05 · Procedural (Geometry Nodes scatter)
+
+> **See also §12:** the measurements below are sound, but the archived `scatter_realized.blend` was not actually realized — a bug in the test script. Fixed and regenerated.
 
 | Defect | Cause | Caught by | Outcome |
 | --- | --- | --- | --- |
@@ -117,6 +121,8 @@ target placement.
 ---
 
 ## 07 · Animation (hinged lid)
+
+> **See also §12:** the recorded `glb-metrics.json` predated the hinge-leaf fix described below. Regenerated as `glb-metrics-v2-strap-hinge.json`.
 
 | Defect | Cause | Caught by | Outcome |
 | --- | --- | --- | --- |
@@ -271,4 +277,125 @@ comparison then returns `regression.count: 0`.
 That failure mode is the right one to have — it refuses to report a pass for a
 gate it could not evaluate. It just needs reading carefully, which is the theme
 of this whole ledger.
+
+
+### The remaining skills, re-measured (2026-09-19)
+
+Six of the nine hold a 3D artifact and could be re-measured. Three cannot:
+**08 iterative-refinement** produced a review record, **09 art-direction-intake**
+a concept image, and **10 mcp-integration** an audit. There is nothing for a
+geometry inspector to read in any of them, and no amount of tooling changes
+that.
+
+| Skill | Result |
+| --- | --- |
+| 03 rendering | first inspect metrics ever taken — 8,330 tris, 77 objects, 3 lights, 2 cameras, 0 defects |
+| 04 simulation | **warning found**: 7 faces with no material |
+| 05 procedural | **the archived "realized" artifact was not realized**, caused by a bug in the test script |
+| 06 character | perfect agreement — 22/22 totals, 0 per-mesh mismatches |
+| 07 animation | **recorded metrics predate the hinge-leaf fix** |
+
+Two of the six turned up stale evidence, which together with the crate's
+six-view makes three instances of the same pattern: a late fix landed, the
+artifact was re-exported, and the metrics JSON beside it was never re-run.
+**The fix is procedural, not technical — regenerate metrics after the last
+repair, not after the last-but-one.**
+
+#### 06 character — the one clean result
+
+All 22 compared totals identical and zero mismatches across the per-mesh
+fields. 1,772 triangles, **1 connected component**, 888 of 888 vertices
+weighted, 21 bones against 21 vertex groups, zero non-manifold and zero
+boundary edges. The continuous-mesh repair recorded in §06 holds up under a
+second, independent measurement path.
+
+#### 07 animation — metrics one stage behind the artifact
+
+The recorded `glb-metrics.json` describes 74 meshes. The archived
+`lid_anim.glb` has 78, and the four extra are exactly:
+
+```
+Hinge_Leaf_Fixed_0   Hinge_Leaf_Fixed_1   Hinge_Leaf_Lid_0   Hinge_Leaf_Lid_1
+```
+
+Those are the hinge leaves — the repair §07 describes as *"Fixed — full strap
+hinge: knuckle, lid leaf, rear-face leaf"*. `Hinge_Knuckle_0` and `_1` also grew
+from 44 to 52 triangles, consistent with the same rebuild. So the narrative in
+§07 is correct and only the metrics file was stale. Kept as
+`glb-metrics-v1-decorative-hinge.json`; the current state is
+`glb-metrics-v2-strap-hinge.json` (8,510 tris, 78 meshes).
+
+#### 04 simulation — a warning nobody had seen
+
+`missing_material_faces: 7`, severity warning, `hard_gate_pass` still true:
+
+| Object | Faces | Material slots |
+| --- | --- | --- |
+| `SIM_Effector_CrateProxy` | 6 | none |
+| `SIM_Inflow` | 1 | none |
+
+Both are invisible simulation helpers carrying `FLUID` modifiers, so this is
+benign. It went unrecorded for a duller reason: **the inspector was never run
+on the simulation scene at all.** That folder held a render manifest and two
+cache manifests, no geometry metrics. Absence of a warning meant absence of a
+measurement.
+
+#### 05 procedural — the artifact was wrong, and the script caused it
+
+`scatter_realized.blend` reported the same 8,330 triangles as
+`scatter_default.blend`. Reading the modifier directly settled it — both files
+had `Realize = False`, 3,124 instances and identical evaluated geometry. The
+"realized" artifact was a duplicate of the instanced one.
+
+The cause is in `source/procedural_scatter.py`. The measurement block flipped
+`Realize` on to take the realized count and then restored it to a **hardcoded
+`False`** before saving:
+
+```python
+set_mod_input(mod, ids["Realize"], True)    # measure
+real_n, real_tris = measure(surf)
+set_mod_input(mod, ids["Realize"], False)   # <- clobbers --realize
+bpy.ops.wm.save_as_mainfile(filepath=blend)
+```
+
+So `--realize` measured correctly, printed the right number to the log, and
+then saved a file that did not match it. The measurement in §05 was never
+wrong; the artifact preserving it was. Fixed to restore `args.realize`, and
+regenerated:
+
+| | before | after the fix |
+| --- | --- | --- |
+| `Realize` socket | False | **True** |
+| instances | 3,124 | **0** |
+| evaluated triangles | 8,330 | **374,762** |
+
+374,762 = 366,432 realized crates + 8,330 for the parked source crate and the
+floor, which reconciles exactly with the §05 table. The superseded file is kept
+as `scatter_instanced-duplicate-SUPERSEDED.blend`.
+
+**Realizing also loses materials** — the regenerated file reports
+`missing_material_faces: 174,768`, every realized face. The instanced version
+has none, because instances carry the source crate's materials while the
+realize path inherits the scatter surface's empty slots. New finding, not
+previously recorded.
+
+#### What the instance warning proves about the tooling
+
+On the instanced file, `describe_scene` reported 8,330 triangles and added a
+fourth limitation line the crate never produced:
+
+> Dependency-graph instances are not expanded. Realize instances before relying
+> on totals or bounds.
+
+On the genuinely realized file **that line disappears** and the count becomes
+374,762. The warning is emitted only when it changes the answer. Three
+independent paths then agree on that number — the CLI inspector, the Rust
+runtime, and a direct `bpy` depsgraph walk — and the inspector adds the detail
+that makes it legible: `PROC_ScatterSurface` is `source_polygons: 1` evaluating
+to 174,768 polygons.
+
+One cosmetic difference between the two paths: the inspector reports
+`connected_components: 3080` where the runtime reports
+`disconnected_components: 3079`. The runtime counts components beyond the
+first. Not a disagreement, but do not compare the two fields directly.
 

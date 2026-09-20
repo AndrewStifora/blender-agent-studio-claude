@@ -103,10 +103,11 @@ and `11` is the finished state, so read 01 → 02 → 11.
 - **The A/B benchmark has not been run.** The ported harness can run it, but
   the mcp-integration audit only covers one condition. "Nothing was blocked
   without it" is not the same as "it does not help."
-- **Only the crate was re-measured through the MCP tools.** All twelve tools
-  work and they agree exactly with the CLI path on that asset
-  ([FINDINGS.md](FINDINGS.md) §12), but the other nine skills' results still
-  rest on CLI measurements alone.
+- **Three skills cannot be re-measured through the geometry tools at all** —
+  iterative-refinement produced a review record, art-direction-intake a concept
+  image, mcp-integration an audit. The other eight were re-measured and the two
+  paths agree; see [FINDINGS.md](FINDINGS.md) §12, which also records the three
+  places where archived metrics had fallen a stage behind their artifact.
 - **Raw artifacts are not in this repo** — logs, metrics JSON, `.blend`/`.glb`
   files and the video were left out deliberately, both for size and because
   machine-generated output carried absolute local paths.
