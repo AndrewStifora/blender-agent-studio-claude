@@ -147,17 +147,40 @@ Installing as a plugin brings up the plugin's own MCP server and its twelve
 | `blender_compare_reference`, `blender_fit_reference_camera` | reference matching |
 | `blender_search_polyhaven_assets`, `blender_download_polyhaven_asset` | assets |
 
-**All the testing in [FINDINGS.md](FINDINGS.md) was done without them**, on the
-documented CLI fallback, because the hand-ported skills-dir install shipped no
-server. Every skill has that fallback and nothing was blocked. Three tools —
-`blender_describe_scene`, `blender_quality_report`, `blender_compare_scenes` —
-are Rust-backed with no CLI equivalent; without them the skills are told to
-continue on the inspector plus visual evidence rather than claim analysis they
-did not run.
+The findings in [FINDINGS.md](FINDINGS.md) §01–11 were measured on the CLI
+fallback, before the server was installed. §12 re-ran the crate through the MCP
+tools and **the two paths agree exactly** — 33 of 33 scene totals and zero
+mismatches across 770 per-mesh field comparisons. Nothing in the ledger needed
+revising. Prefer the MCP tools: `blender_render_evidence` returns the contact
+sheet inline, so a render cannot be reported without being looked at.
 
-So the tooled path is wired and validated, but the results recorded here came
-from the leaner one. If a skill now reaches for a `blender_*` tool, that is the
-better path, not a regression.
+### The three Rust-backed tools need a built runtime
+
+`blender_describe_scene`, `blender_quality_report` and `blender_compare_scenes`
+have no CLI equivalent and fail loudly — never silently — until the runtime is
+built. Build it from the plugin root:
+
+```bash
+cargo +stable-x86_64-pc-windows-gnu build --release --locked --manifest-path runtime/Cargo.toml
+```
+
+On Windows, use the **GNU** toolchain as shown. `bun run setup:runtime` calls
+plain `cargo build`, which selects MSVC and fails on
+`linker link.exe not found` unless Visual C++ build tools are installed; the GNU
+toolchain brings its own linker and builds in about 13 seconds.
+
+What these three add is a refusal to overclaim. Every response carries a
+`not_measured` list and an `agent_review_required` list, and a declared contact
+pair comes back `contact_unverified` with `evidence: world_aabb_only` rather
+than "pass", because overlapping bounding boxes do not prove that two surfaces
+touch. The gates do fire: a 5,000-triangle budget against the 8,328-triangle
+crate returns `status: constraints_failed`.
+
+One trap worth knowing: `compare_scenes` applies `maxCenterShift`,
+`maxDimensionChange` and `forbidNewTopologyFindings` to every matched object
+when `invariantObjects` is empty — including Empties, which have no bounds or
+mesh. That yields `constraints_failed` on an unevaluable gate, which reads like
+a regression and is not one. Scope `invariantObjects` to mesh objects.
 
 ## Prerequisites
 

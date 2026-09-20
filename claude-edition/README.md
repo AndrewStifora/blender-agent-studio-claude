@@ -72,11 +72,11 @@ on looking at the result and tells you where to look.
 
 ## Evidence
 
-`highlights/` holds nineteen images as labelled before/after pairs:
+`highlights/` holds twenty images as labelled before/after pairs:
 
 | Pair | What it shows |
 | --- | --- |
-| `01-crate-six-view-*` | Nail heads invisible, gap under the lid, posts hidden → all fixed |
+| `01-crate-six-view-*-visual-fixes` | Nail heads invisible, gap under the lid, posts hidden → all fixed |
 | `02-bracket-*` | Wood grain rendering *through* metal → solid hardware |
 | `03-wood-*` | An over-correction: too orange, then calibrated back |
 | `04-elbow-*` | The torn elbow → one continuous surface |
@@ -86,6 +86,11 @@ on looking at the result and tells you where to look.
 | `08-bracket-chrome-*` | Hardware reading as polished chrome → cast iron |
 | `09-scatter-*` | 44 instances placed procedurally, and 248 showing a rule break down |
 | `10-concept-lantern` | An art-direction reference generated before modelling |
+| `11-crate-six-view-FINAL-after-bracket-fix` | The crate as it actually ends up, brackets standing proud |
+
+Pair `01` is the crate **part-way through** — after the first round of visual
+fixes, before the corner brackets were rebuilt. `02-bracket-*` is that rebuild
+and `11` is the finished state, so read 01 → 02 → 11.
 
 ## Honest limits
 
@@ -98,6 +103,10 @@ on looking at the result and tells you where to look.
 - **The A/B benchmark has not been run.** The ported harness can run it, but
   the mcp-integration audit only covers one condition. "Nothing was blocked
   without it" is not the same as "it does not help."
+- **Only the crate was re-measured through the MCP tools.** All twelve tools
+  work and they agree exactly with the CLI path on that asset
+  ([FINDINGS.md](FINDINGS.md) §12), but the other nine skills' results still
+  rest on CLI measurements alone.
 - **Raw artifacts are not in this repo** — logs, metrics JSON, `.blend`/`.glb`
   files and the video were left out deliberately, both for size and because
   machine-generated output carried absolute local paths.

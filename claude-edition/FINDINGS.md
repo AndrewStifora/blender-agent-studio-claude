@@ -214,3 +214,61 @@ Its automated harness spawns the OpenAI `codex` CLI and hardcodes OpenAI model
 names (`gpt-6-astra`, `gpt-5.6-sol`). `codex` is not installed. The methodology
 and scoring references are readable and the scoring scripts are agent-agnostic,
 but the harness cannot run here.
+
+---
+
+## 12 · Re-verification on the MCP path (2026-09-19)
+
+Everything above was measured through each skill's **CLI fallback**, because the
+original install shipped no MCP server. After installing the plugin properly the
+server's twelve `blender_*` tools came up, so the crate was rebuilt from
+`01-modeling/source/create_crate.py` and measured again through them.
+
+**The two measurement paths agree exactly.** 33 of 33 scene totals identical,
+and zero mismatches across 770 per-mesh field comparisons (70 meshes × 11
+fields). Same Blender build both times, `d13f752e3b9c`. Nothing above needs
+revising on account of the tool change.
+
+Four things the re-run did establish:
+
+| Finding | Detail |
+| --- | --- |
+| **`six-view-final/` was not final** | Its renders predated the bracket fix. Caught by `bounds` in the manifest: 0.600 m against the metrics' 0.608 m — exactly the 2 × 4 mm of bracket standing proud. Re-rendered; the superseded set is kept as `six-view-after-visual-fixes/` |
+| **GLB export splits meshes** | One bracket plate: 8 vertices, 1 component, 0 non-manifold edges in `.blend` → 138 vertices, 9 components, 174 non-manifold edges in `.glb`. Triangles unchanged |
+| **The build is not bit-reproducible** | Same-size GLB, ~53 bytes differing — float LSB drift. `compare_scenes` reports 71/71 unchanged, `triangle_delta: 0` |
+| **The Rust runtime needs the GNU toolchain** | `bun run setup:runtime` uses plain `cargo build`, picks MSVC, and fails with `linker link.exe not found` |
+
+### The non-manifold count was never a defect
+
+`metrics-04` reports **11,732 non-manifold edges** scene-wide, which reads
+alarmingly. It is an artifact of inspecting the GLB. The same inspector on the
+`.blend` reports **zero**. Vertex splitting for flat normals turns every face
+into its own shell on export; the model is sound. Read topology from the
+`.blend`, and treat the GLB's counts as a property of the export.
+
+### What the Rust-backed tools add
+
+They are the three with no CLI equivalent, and what they contribute is
+*refusal to overclaim*. Every response carries a `not_measured` list —
+triangle-level intersections, surface contact, symmetry, silhouette similarity,
+aesthetic quality — and an `agent_review_required` list of questions only a
+human or a look at the renders can answer. Declared contact pairs come back
+`contact_unverified` with `evidence: world_aabb_only` rather than "pass",
+because overlapping bounding boxes do not prove two surfaces touch.
+
+The constraint gates do fire. A triangle budget of 5,000 against the crate's
+8,328 returns `status: constraints_failed` with
+`{code: triangle_budget, actual: 8328, maximum: 5000}`.
+
+**One trap.** `maxCenterShift`, `maxDimensionChange` and
+`forbidNewTopologyFindings` apply to every matched object when
+`invariantObjects` is left empty — including Empties such as `Crate_Root`,
+which have no bounds or mesh. The gate then reports
+`invariant_bounds_unavailable` and `constraints_failed`, which looks like a
+regression and is not one. Scope `invariantObjects` to mesh objects; the same
+comparison then returns `regression.count: 0`.
+
+That failure mode is the right one to have — it refuses to report a pass for a
+gate it could not evaluate. It just needs reading carefully, which is the theme
+of this whole ledger.
+
