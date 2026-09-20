@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "blender-agent-studio": {
+      "command": "bun",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.ts"],
+      "cwd": "${CLAUDE_PLUGIN_ROOT}",
+      "note": "Bounded Blender inspection, authored/evidence rendering, and verified Poly Haven texture/HDRI acquisition. Paths are ${CLAUDE_PLUGIN_ROOT}-absolute: the sibling .mcp.json uses './mcp/server.ts' with cwd '.', which Codex resolves against the plugin root but Claude Code resolves against the session working directory, so it fails silently under Claude."
+    }
+  }
+}

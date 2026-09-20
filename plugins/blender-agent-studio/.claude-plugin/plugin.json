@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "blender-agent-studio",
+  "version": "0.6.2",
+  "description": "Iterative, evidence-driven Blender 5.2 creation, validation, repair, animation, and regression-safe benchmark workflows.",
+  "author": {
+    "name": "Bars",
+    "url": "https://github.com/ifBars"
+  },
+  "homepage": "https://github.com/ifBars/blender-agent-studio#readme",
+  "repository": "https://github.com/AndrewStifora/blender-agent-studio-claude.git",
+  "license": "MIT",
+  "keywords": [
+    "blender",
+    "claude-code",
+    "agent-skills",
+    "mcp",
+    "benchmarking"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp-claude.json"
+}

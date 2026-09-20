@@ -1,0 +1,16 @@
+{
+  "name": "blender-agent-studio-claude",
+  "owner": {
+    "name": "Andrew Stifora",
+    "url": "https://github.com/AndrewStifora"
+  },
+  "description": "Claude Code edition of Bars' Blender Agent Studio. Adds the .claude-plugin manifests Claude Code requires, a plugin-root-relative MCP config, and a Claude CLI port of the benchmark harness. Upstream: github.com/ifBars/blender-agent-studio (MIT).",
+  "plugins": [
+    {
+      "name": "blender-agent-studio",
+      "source": "./plugins/blender-agent-studio",
+      "category": "Developer Tools",
+      "description": "Evidence-driven Blender 5.2 workflows: reproducible modeling, Geometry Nodes, rendering, physics simulation, character rigs, animation, asset validation, and critique-and-repair iteration."
+    }
+  ]
+}
