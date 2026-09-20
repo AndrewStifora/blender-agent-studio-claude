@@ -1,5 +1,14 @@
 # Blender Agent Studio
 
+> **This is a fork.** It adds Claude Code support to
+> [ifBars/blender-agent-studio](https://github.com/ifBars/blender-agent-studio),
+> which is upstream and where the skills come from. The additions are the
+> `.claude-plugin` manifests Claude Code requires, a plugin-root-relative MCP
+> config, and a Claude CLI port of the benchmark harness — all additive, so the
+> Codex path below still works unchanged.
+>
+> **→ [claude-edition/](claude-edition/) · [Install under Claude Code](claude-edition/INSTALL.md)**
+
 Describe what you want to make. Keep the Blender file and the Python that built it.
 
 A Codex plugin for creating and refining Blender models, animations, and scenes.
