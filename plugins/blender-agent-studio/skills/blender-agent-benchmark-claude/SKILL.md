@@ -5,6 +5,9 @@ description: Benchmark Blender agent workflows with paired isolated runs driven 
 
 # Blender Agent Benchmark — Claude Code edition
 
+Read [the shared execution guidance](references/astra-workflow.md) once per task
+for autonomous decisions, evidence cadence, and long-task continuity.
+
 A port of `blender-agent-benchmark` that drives `claude` instead of `codex`.
 The sibling skill is unchanged; use that one if you are benchmarking Codex.
 
