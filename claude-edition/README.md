@@ -22,6 +22,8 @@ See [INSTALL.md](INSTALL.md) for both install routes.
 
 ## Documents
 
+- **[SKILLS.md](SKILLS.md)** — all twelve skills, what each one does, and a
+  prompt that reaches it. Start here if you just want to use them.
 - **[FINDINGS.md](FINDINGS.md)** — every defect found while testing the skills,
   its cause, and whether it was fixed and re-verified.
 - **[BLENDER-5.2-API-NOTES.md](BLENDER-5.2-API-NOTES.md)** — five breaking

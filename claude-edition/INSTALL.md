@@ -103,3 +103,16 @@ cd plugins/blender-agent-studio/skills/blender-agent-benchmark-claude
 bun test scripts/            # 35 unit tests
 bun validate-port.ts --no-bare   # real claude run, 8 assertions
 ```
+
+Note that `claude plugin validate <repo>` checks only the marketplace manifest.
+To check the plugin manifest as well, point it at the plugin:
+
+```bash
+claude plugin validate /path/to/blender-agent-studio-claude/plugins/blender-agent-studio
+```
+
+## Then what
+
+[SKILLS.md](SKILLS.md) lists all twelve skills with a prompt that reaches each
+one. You never name a skill — the descriptions are matched against what you ask
+for.
