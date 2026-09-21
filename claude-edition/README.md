@@ -92,6 +92,20 @@ Pair `01` is the crate **part-way through** — after the first round of visual
 fixes, before the corner brackets were rebuilt. `02-bracket-*` is that rebuild
 and `11` is the finished state, so read 01 → 02 → 11.
 
+## Social preview
+
+`social-preview.png` is this repository's Open Graph card, at the 1280×640
+GitHub asks for. Upload it under **Settings → General → Social preview**; that
+is the only way to set one, as GitHub does not read it from the repository.
+
+Both halves regenerate, and the hero is a real render rather than stock art:
+
+- `social-preview-hero.py` renders the subject on a transparent background
+  through Cycles, framing it by its bounding sphere so the camera needs no
+  hand-tuning. The committed hero is the validation crate from skill 01.
+- `social-preview.py` composites that render with the typography. It needs
+  Pillow and fetches Inter and JetBrains Mono into the system temp directory.
+
 ## Honest limits
 
 - **The rigged figure is a mannequin** — no clothing, face or fingers. That was
